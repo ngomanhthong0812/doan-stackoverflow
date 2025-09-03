@@ -1,0 +1,29 @@
+node_modules/
+.env
+
+# Log files
+logs/
+*.log
+npm-debug.log*
+
+# Test coverage
+
+coverage/
+
+
+# System
+.DS_Store
+.vscode/
+
+# Build
+dist/
+
+[alias]
+  cm = commit
+  co = checkout
+  br = branch
+  st = status
+  lg = log --oneline --graph --decorate
+  last = log -1 HEAD
+  unstage = reset HEAD --
+  pom = push origin main
