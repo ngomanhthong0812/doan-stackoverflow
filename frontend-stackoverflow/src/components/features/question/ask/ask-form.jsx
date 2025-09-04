@@ -1,27 +1,47 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import RichTextEditor from "./rich-text-editor";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import Select from "react-select";
+import { _getTags } from "@/services/tag";
+import { _createQuestions } from "@/services/questions";
+import { toast } from "sonner";
+import { useAuth } from "@/contexts/auth";
+import { useRouter } from "@tanstack/react-router";
 
 export default function AskForm() {
+  const router = useRouter();
+  const { user } = useAuth();
   const [title, setTitle] = useState("");
   const [details, setDetails] = useState("");
-  const [attempt, setAttempt] = useState("");
   const [tags, setTags] = useState([]);
   const [step, setStep] = useState(1);
 
-  const handleSubmit = () => {
-    console.log("Title:", title);
-    console.log("Details:", details);
-    console.log("Attempt:", attempt);
-    console.log("Tags:", tags);
-    // TODO: call API tạo câu hỏi
+  const handleSubmit = async () => {
+    if (!user) return;
+    try {
+      const tagIds = tags.map((tag) => tag._id);
+
+      const payload = {
+        title,
+        content: details,
+        tags: tagIds,
+        author: user._id,
+      };
+
+      const res = await _createQuestions(payload);
+
+      toast.success("Question created successfully");
+      if (res?._id) {
+        router.navigate({ to: `/questions/${res._id}` });
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to create question");
+    }
   };
 
   const titleValid = title.trim().length > 0;
   const detailsValid = details.trim().length >= 20;
-  const attemptValid = attempt.trim().length >= 20;
   const tagsValid = tags.length > 0;
 
   return (
@@ -59,25 +79,10 @@ export default function AskForm() {
         )}
       </StepWrapper>
 
-      {/* Attempt */}
-      <StepWrapper disabled={step < 3}>
-        <Label className="block text-sm font-semibold mb-1">
-          What did you try and what were you expecting?
-        </Label>
-        <p className="text-xs text-gray-500 mb-2">
-          Describe what you tried, what you expected to happen, and what
-          actually resulted. Minimum 20 characters.
-        </p>
-        <RichTextEditor value={attempt} onChange={setAttempt} />
-        {step === 3 && (
-          <NextButton disabled={!attemptValid} onClick={() => setStep(4)} />
-        )}
-      </StepWrapper>
-
       {/* Tags */}
-      <StepWrapper disabled={step < 4}>
+      <StepWrapper disabled={step < 3}>
         <TagsInput tags={tags} setTags={setTags} />
-        {step === 4 && (
+        {step === 3 && (
           <NextButton
             disabled={!tagsValid}
             onClick={handleSubmit}
@@ -113,17 +118,38 @@ function NextButton({ disabled, onClick, label = "Next" }) {
   );
 }
 
-const tagOptions = [
-  { value: "javascript", label: "javascript" },
-  { value: "reactjs", label: "reactjs" },
-  { value: "nextjs", label: "nextjs" },
-  { value: "css", label: "css" },
-  { value: "html", label: "html" },
-  { value: "nodejs", label: "nodejs" },
-];
-
-function TagsInput({ tags, setTags }) {
+export function TagsInput({ tags, setTags }) {
   const [inputValue, setInputValue] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [tagsData, setTagsData] = useState([]);
+
+  useEffect(() => {
+    const fetch = async () => {
+      const res = await _getTags({ page: 1, perPage: 6, search: inputValue });
+      setTagsData(res?.data || []);
+    };
+    fetch();
+  }, [inputValue]);
+
+  // Thêm tag
+  const handleAddTag = (tag) => {
+    let newTags = tags.filter((t) => t._id !== tag._id);
+
+    if (newTags.length >= 5) {
+      newTags.shift();
+    }
+
+    newTags.push(tag);
+
+    setTags(newTags);
+    setInputValue("");
+    setShowDropdown(false);
+  };
+
+  // Xoá tag
+  const handleRemoveTag = (tag) => {
+    setTags(tags.filter((t) => t._id !== tag._id));
+  };
 
   return (
     <div>
@@ -133,29 +159,57 @@ function TagsInput({ tags, setTags }) {
         to see suggestions.
       </p>
 
-      <Select
-        isMulti
-        options={tagOptions}
-        value={tags}
-        onChange={(selected) => {
-          if ((selected?.length || 0) <= 5) setTags(selected || []);
-        }}
-        inputValue={inputValue}
-        onInputChange={(val) => setInputValue(val)}
-        placeholder="e.g. reactjs, javascript"
-        className="text-sm"
-        classNamePrefix="react-select"
-        maxMenuHeight={160}
-        menuIsOpen={inputValue.length > 0}
-        filterOption={(option, input) =>
-          option.label.toLowerCase().includes(input.toLowerCase())
-        }
-        components={{
-          DropdownIndicator: () => null,
-        }}
-        noOptionsMessage={() => (inputValue ? "No matching tags" : null)}
-      />
+      {/* Ô input */}
+      <div className="border rounded-lg p-2 flex flex-wrap gap-2 focus-within:ring-2 focus-within:ring-blue-500">
+        {tags.map((tag) => (
+          <span
+            key={tag._id}
+            className="flex items-center gap-1 bg-gray-100 text-gray-700 font-bold px-1 rounded-sm text-xs"
+          >
+            {tag?.name}
+            <button
+              onClick={() => handleRemoveTag(tag)}
+              className="text-xs font-bold hover:text-red-500"
+            >
+              ×
+            </button>
+          </span>
+        ))}
 
+        <input
+          type="text"
+          value={inputValue}
+          onChange={(e) => {
+            setInputValue(e.target.value);
+            setShowDropdown(true);
+          }}
+          onFocus={() => setShowDropdown(true)}
+          className="flex-1 min-w-[100px] outline-none text-sm"
+          placeholder="e.g. reactjs, javascript"
+        />
+      </div>
+
+      {/* Dropdown gợi ý */}
+      {showDropdown && inputValue && tagsData.length > 0 && (
+        <div className="mt-2 border rounded-lg shadow-lg p-2 bg-white overflow-y-auto">
+          <div className="grid grid-cols-4 gap-2">
+            {tagsData?.map((tag) => (
+              <button
+                key={tag._id}
+                onClick={() => handleAddTag(tag)}
+                className="text-sm flex flex-col items-start !p-1"
+              >
+                <span className="flex items-center gap-1 bg-gray-100 text-gray-700 font-bold px-1 rounded-sm text-xs w-fit p-1">
+                  {tag?.name}
+                </span>
+                <p className="mt-2 line-clamp-5 text-xs">{tag?.description}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Info */}
       <p className="text-xs text-gray-400 mt-1">
         {tags.length}/5 tags selected
       </p>

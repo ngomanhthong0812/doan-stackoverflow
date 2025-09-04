@@ -4,8 +4,8 @@ import { Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import TagItem from "./tag-item";
 import { _getTags } from "@/services/tag";
-import { Skeleton } from "@/components/ui/skeleton";
 import Pagination from "../pagination";
+import RenderSkeleton from "../render-skeleton";
 
 export default function TagFilter() {
   const tabs = ["popular", "name", "new"];
@@ -26,7 +26,7 @@ export default function TagFilter() {
 
   useEffect(() => {
     setPage(1);
-  }, [perPage]);
+  }, [perPage, search]);
 
   // debounce search
   useEffect(() => {
@@ -58,20 +58,6 @@ export default function TagFilter() {
 
     fetchTags();
   }, [debouncedSearch, activeTab, page, perPage]);
-
-  const renderSkeleton = () => (
-    <div className="grid grid-cols-4 gap-3 mt-4">
-      {Array.from({ length: 6 }).map((_, idx) => (
-        <div className="flex flex-col space-y-3" key={idx}>
-          <Skeleton className="h-[125px] w-full rounded-xl" />
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-[80%]" />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
 
   return (
     <div className="flex flex-col w-full gap-4 mt-7 pl-6">
@@ -109,7 +95,7 @@ export default function TagFilter() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         {tabs.map((tab) => (
           <TabsContent key={tab} value={tab} className="mt-4">
-            {loading && renderSkeleton()}
+            {loading && <RenderSkeleton />}
             {!loading && tagsByTab[tab].length === 0 && (
               <p className="text-gray-500">No tags found</p>
             )}

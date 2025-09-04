@@ -1,9 +1,7 @@
 import { Button } from "@/components/ui/button";
 import QuestionSidebar from "./question-sidebar";
 import QuestionFilter from "./question-filter";
-import QuestionItem from "./question-item";
 import { Link } from "@tanstack/react-router";
-import Pagination from "../pagination";
 
 export default function Question() {
   return (
@@ -19,16 +17,6 @@ export default function Question() {
           </Button>
         </div>
         <QuestionFilter />
-        <div className="border-t">
-          <QuestionItem />
-          <QuestionItem />
-          <QuestionItem />
-        </div>
-        <Pagination
-          className="pl-6 py-4 mt-6"
-          currentPage={1}
-          totalPages={1000}
-        />
       </main>
       <QuestionSidebar />
     </section>

@@ -17,7 +17,7 @@ import { Route as appTagsRouteImport } from './routes/(app)/tags'
 import { Route as appAccountRouteImport } from './routes/(app)/account'
 import { Route as appQuestionsIndexRouteImport } from './routes/(app)/questions/index'
 import { Route as appQuestionsAskRouteImport } from './routes/(app)/questions/ask'
-import { Route as appQuestionsIdNameRouteImport } from './routes/(app)/questions/$idName'
+import { Route as appQuestionsIdRouteImport } from './routes/(app)/questions/$id'
 
 const appIndexRoute = appIndexRouteImport.update({
   id: '/(app)/',
@@ -59,9 +59,9 @@ const appQuestionsAskRoute = appQuestionsAskRouteImport.update({
   path: '/questions/ask',
   getParentRoute: () => rootRouteImport,
 })
-const appQuestionsIdNameRoute = appQuestionsIdNameRouteImport.update({
-  id: '/(app)/questions/$idName',
-  path: '/questions/$idName',
+const appQuestionsIdRoute = appQuestionsIdRouteImport.update({
+  id: '/(app)/questions/$id',
+  path: '/questions/$id',
   getParentRoute: () => rootRouteImport,
 })
 
@@ -72,7 +72,7 @@ const rootRouteChildren = {
   authLoginRoute: authLoginRoute,
   authRegisterRoute: authRegisterRoute,
   appIndexRoute: appIndexRoute,
-  appQuestionsIdNameRoute: appQuestionsIdNameRoute,
+  appQuestionsIdRoute: appQuestionsIdRoute,
   appQuestionsAskRoute: appQuestionsAskRoute,
   appQuestionsIndexRoute: appQuestionsIndexRoute,
 }

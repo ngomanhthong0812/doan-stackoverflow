@@ -17,3 +17,8 @@ export const _getTags = async ({
 
   return response.data;
 };
+
+export const _createTags = async ({ name, description }) => {
+  const response = await axios.post("/tags", { name, description });
+  return response.data;
+};

@@ -14,20 +14,17 @@ exports.getAllTags = async ({
     match.name = { $regex: search, $options: "i" };
   }
 
-  const skip = (page - 1) * perPage;
-
-  // Aggregate tags + tính questionCount
   let sortOption = {};
   switch (sortBy) {
     case "name":
-      sortOption = { name: 1 };
+      sortOption = { name: 1, _id: 1 };
       break;
     case "new":
-      sortOption = { createdAt: -1 };
+      sortOption = { createdAt: -1, _id: 1 };
       break;
     case "popular":
     default:
-      sortOption = { questionCount: -1 };
+      sortOption = { questionCount: -1, createdAt: -1, _id: 1 };
       break;
   }
 
@@ -39,13 +36,13 @@ exports.getAllTags = async ({
     now.getDate() - now.getDay()
   );
 
-  const tags = await Tag.aggregate([
+  const result = await Tag.aggregate([
     { $match: match },
     {
       $lookup: {
         from: "questions",
         localField: "_id",
-        foreignField: "tagId",
+        foreignField: "tags", // fix đúng schema
         as: "questions",
       },
     },
@@ -75,17 +72,25 @@ exports.getAllTags = async ({
         },
       },
     },
-    { $sort: sortOption },
-    { $skip: skip },
-    { $limit: perPage },
     {
       $project: {
         questions: 0,
       },
     },
+    {
+      $facet: {
+        data: [
+          { $sort: sortOption },
+          { $skip: (page - 1) * perPage },
+          { $limit: perPage },
+        ],
+        totalCount: [{ $count: "count" }],
+      },
+    },
   ]);
 
-  const total = await Tag.countDocuments(match);
+  const tags = result[0].data;
+  const total = result[0].totalCount[0]?.count || 0;
 
   return {
     data: tags,

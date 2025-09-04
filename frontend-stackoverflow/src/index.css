@@ -208,3 +208,79 @@ button:focus-visible {
     padding-right: 2rem;
   }
 }
+
+.ql-editor img {
+  max-height: 350px;
+  object-fit: contain;
+}
+
+.quill-content h1 {
+  font-size: 2rem;
+  font-weight: bold;
+  margin: 1rem 0;
+}
+
+.quill-content h2 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin: 0.75rem 0;
+}
+
+.quill-content strong {
+  font-weight: bold;
+}
+.quill-content em {
+  font-style: italic;
+}
+.quill-content u {
+  text-decoration: underline;
+}
+.quill-content s {
+  text-decoration: line-through;
+}
+
+.quill-content ol {
+  list-style-type: decimal;
+  margin-left: 1.5rem;
+}
+.quill-content ul {
+  list-style-type: disc;
+  margin-left: 1.5rem;
+}
+
+.quill-content blockquote {
+  border-left: 4px solid #ccc;
+  padding-left: 1rem;
+  color: #666;
+}
+
+.quill-content pre {
+  background: #1e1e1e;
+  color: #f8f8f2;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+}
+
+.quill-content a {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.quill-content img {
+  max-width: 100%;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+}
+
+.quill-content .ql-code-block-container {
+  background: #1e1e1e; /* nền tối kiểu VSCode */
+  color: #d4d4d4; /* chữ xám sáng */
+  font-family: monospace;
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin: 4px 0;
+  white-space: pre-wrap; /* xuống dòng giữ format */
+  max-height: 550px;
+  overflow: auto;
+}

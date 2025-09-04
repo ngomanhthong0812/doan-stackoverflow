@@ -73,6 +73,7 @@ app.use("/api/reports", require("./routes/report"));
 app.use("/api/notifications", require("./routes/notification"));
 app.use("/api/tags", require("./routes/tag"));
 app.use("/api/leaderboard", require("./routes/leaderboard"));
+app.use("/api/upload", require("./routes/upload"));
 
 // ==== Health check ====
 app.get("/", (req, res) => {

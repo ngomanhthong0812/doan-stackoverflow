@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -8,7 +8,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Separator } from "@/components/ui/separator";
+import QuestionItem from "./question-item";
+import { _getQuestions } from "@/services/questions";
+import Pagination from "../pagination";
+import RenderSkeleton from "../render-skeleton";
 
 // Tabs
 function Tabs({ active, setActive }) {
@@ -36,11 +39,7 @@ function Tabs({ active, setActive }) {
 
 // Filter Panel
 function FilterBy({ filter, updateFilter, onApply, onClear }) {
-  const checkboxes = [
-    { key: "noAnswers", label: "No answers" },
-    { key: "noAccepted", label: "No upvoted or accepted answers" },
-    { key: "noStaging", label: "No Staging Ground" },
-  ];
+  const checkboxes = [{ key: "noAnswers", label: "No answers" }];
 
   const radios = [
     { key: "newest", label: "Newest" },
@@ -112,79 +111,130 @@ function FilterBy({ filter, updateFilter, onApply, onClear }) {
   );
 }
 
-// Main
 export default function QuestionFilter() {
-  const [activeTab, setActiveTab] = useState("Newest");
+  const [questions, setQuestions] = useState([]);
   const [filter, setFilter] = useState({
     noAnswers: false,
-    noAccepted: false,
-    noStaging: false,
     sortedBy: "newest",
   });
+  const [appliedFilter, setAppliedFilter] = useState(filter);
+
+  const [pagination, setPagination] = useState();
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(15);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchQues = async () => {
+      setLoading(true);
+      try {
+        const res = await _getQuestions({
+          page,
+          perPage,
+          noAnswers: appliedFilter.noAnswers,
+          sortedBy: appliedFilter.sortedBy,
+        });
+        setQuestions(res.data);
+        setPagination(res.pagination);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchQues();
+  }, [page, perPage, appliedFilter]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [perPage]);
 
   const updateFilter = (key, value) => {
     setFilter((prev) => ({ ...prev, [key]: value }));
   };
 
   const applyFilter = () => {
-    console.log("Applied filters:", filter);
+    setAppliedFilter(filter);
+    setPage(1);
   };
 
   const clearFilter = () => {
-    setFilter({
+    const defaultFilter = {
       noAnswers: false,
-      noAccepted: false,
-      noStaging: false,
       sortedBy: "newest",
-    });
+    };
+    setFilter(defaultFilter);
+    setAppliedFilter(defaultFilter);
+    setPage(1);
   };
 
   return (
-    <div className="flex flex-col mt-4 relative pl-6">
-      <div className="flex items-center justify-between pb-2">
-        {/* Title */}
-        <h2 className="text-lg font-semibold">24,202,902 questions</h2>
+    <>
+      <div className="flex flex-col mt-4 relative pl-6">
+        <div className="flex items-center justify-between pb-2">
+          {/* Title */}
+          <h2 className="text-lg font-semibold">
+            {pagination?.totalQuestions?.toLocaleString() || 0} questions
+          </h2>
 
-        {/* Tabs + Filter */}
-        <div className="flex items-center gap-2">
-          <Tabs active={activeTab} setActive={setActiveTab} />
-
-          {/* Filter Popover */}
-          <Popover a>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-[#1b75d0] text-[#1b75d0] hover:bg-blue-400/10"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={3}
-                  stroke="currentColor"
-                  className="h-4 w-4 mr-1"
+          {/* Tabs + Filter */}
+          <div className="flex items-center gap-2">
+            {/* Filter Popover */}
+            <Popover a>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-[#1b75d0] text-[#1b75d0] hover:bg-blue-400/10"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M3 4.5h18m-12 6h6m-3 6h0"
-                  />
-                </svg>
-                Filter
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="p-0 w-xl mt-5" align="end">
-              <FilterBy
-                filter={filter}
-                updateFilter={updateFilter}
-                onApply={applyFilter}
-                onClear={clearFilter}
-              />
-            </PopoverContent>
-          </Popover>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={3}
+                    stroke="currentColor"
+                    className="h-4 w-4 mr-1"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M3 4.5h18m-12 6h6m-3 6h0"
+                    />
+                  </svg>
+                  Filter
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="p-0 w-xl mt-5" align="end">
+                <FilterBy
+                  filter={filter}
+                  updateFilter={updateFilter}
+                  onApply={applyFilter}
+                  onClear={clearFilter}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
       </div>
-    </div>
+
+      <div className="border-t">
+        {questions &&
+          questions.length > 0 &&
+          questions.map((question) => (
+            <QuestionItem key={question._id} {...question} />
+          ))}
+        {loading && <RenderSkeleton className="grid-cols-1" length={4} />}
+      </div>
+
+      {pagination?.totalPages > 1 && (
+        <Pagination
+          className="pl-6 py-4 mt-6"
+          currentPage={page}
+          totalPages={pagination?.totalPages}
+          onPageChange={setPage}
+          onPerPageChange={setPerPage}
+        />
+      )}
+    </>
   );
 }

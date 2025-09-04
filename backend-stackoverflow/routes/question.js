@@ -19,4 +19,6 @@ router.get('/search', questionController.searchQuestions);
 
 router.get('/users/:id/questions', authMiddleware, questionController.getQuestionsByUser);
 
+router.get("/:id", questionController.getQuestionsById);
+
 module.exports = router;
