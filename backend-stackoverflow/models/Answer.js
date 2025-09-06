@@ -6,7 +6,7 @@ const answerSchema = new Schema({
     question: { type: Schema.Types.ObjectId, ref: 'Question', required: true },
     author: { type: Schema.Types.ObjectId, ref: 'User', required: true },
     isAccepted: { type: Boolean, default: false },
-    commentsCount: { type: Number, default: 0 }, // 👈 Thêm dòng này
+    commentsCount: { type: Number, default: 0 },
     likes: [{
         user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
         likedAt: { type: Date, default: Date.now }

@@ -4,13 +4,11 @@ const questionService = require('../services/questionService');
 exports.createAnswer = async (req, res, next) => {
     try {
         const { content, question } = req.body;
-        const image = req.file?.path || null;
 
         const answer = await answerService.createAnswer({
             content,
             question,
             author: req.user._id,
-            image
         });
 
         await questionService.incrementAnswersCount(question);

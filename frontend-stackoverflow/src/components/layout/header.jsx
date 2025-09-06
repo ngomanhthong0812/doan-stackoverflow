@@ -31,7 +31,7 @@ export default function Header() {
             {user ? (
               <Link to={"/account"}>
                 <Avatar className="size-8">
-                  <AvatarImage src={user?.avatar} />
+                  <AvatarImage src={user?.avatar} className="object-cover" />
                   <AvatarFallback>
                     {user?.username ? user.username[0].toUpperCase() : "U"}
                   </AvatarFallback>

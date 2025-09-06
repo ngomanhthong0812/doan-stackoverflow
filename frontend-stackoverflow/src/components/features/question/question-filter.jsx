@@ -9,7 +9,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import QuestionItem from "./question-item";
-import { _getQuestions } from "@/services/questions";
+import { _getQuestions } from "@/services/question";
 import Pagination from "../pagination";
 import RenderSkeleton from "../render-skeleton";
 

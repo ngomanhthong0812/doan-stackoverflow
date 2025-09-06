@@ -1,24 +1,54 @@
-import { useParams } from "@tanstack/react-router";
+import { useNavigate, useParams } from "@tanstack/react-router";
 
 import { Button } from "@/components/ui/button";
 import QuestionSidebar from "../question-sidebar";
 import { Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { _getQuestionById } from "@/services/questions";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { _getQuestionById, _toggleUpvote } from "@/services/question";
 import { formatTimeAgo } from "@/utils/format-time-ago";
 import { ThumbsUp } from "lucide-react";
 import { useAuth } from "@/contexts/auth";
+import CommentList from "./comment-list";
+import AnswerList from "./answer-list";
+import { _createAnswer, _toggleLike } from "@/services/answer";
+import { useRequireLogin } from "@/hooks/use-require-login";
 
 export default function QuestionDetail() {
   const { id } = useParams({ from: "/(app)/questions/$id" });
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { requireLogin, Dialog } = useRequireLogin();
+
   const [data, setData] = useState(null);
-  useEffect(() => {
-    const fetchQuestion = async () => {
+
+  const didFetch = useRef(false);
+
+  const fetchQuestion = useCallback(async () => {
+    try {
       const res = await _getQuestionById(id);
       setData(res);
-    };
-    fetchQuestion();
+    } catch (err) {
+      console.error("Failed to fetch question:", err);
+    }
   }, [id]);
+
+  useEffect(() => {
+    if (didFetch.current) return;
+    didFetch.current = true;
+
+    fetchQuestion();
+  }, [fetchQuestion]);
+
+  const handleEdit = () => {
+    navigate({ to: `/questions/edit/${data._id}` });
+  };
+  const handleAdd = (e) => {
+    if (!requireLogin()) {
+      e.preventDefault();
+      return;
+    }
+    navigate({ to: "/questions/ask" });
+  };
 
   return (
     <section>
@@ -37,16 +67,17 @@ export default function QuestionDetail() {
               </div>
               <div className="flex gap-1">
                 <span className="text-gray-500">Viewed </span>
-                <span>{data?.view || 0}</span>
+                <span>{data?.views || 0}</span>
               </div>
             </div>
           </div>
           <Button
             className="!bg-[#1b75d0] hover:!bg-[#155ca2] text-white"
-            asChild
+            onClick={handleAdd}
           >
-            <Link to="/questions/ask">Ask Question</Link>
+            Ask Question
           </Button>
+          {Dialog}
         </div>
         <div className="flex py-4">
           <div className="flex-1 pl-6 flex flex-col">
@@ -71,15 +102,20 @@ export default function QuestionDetail() {
             <div className="flex justify-between items-center mt-4">
               <div className="flex gap-2">
                 {/* Vote */}
-                <ToggleVote upvotes={data?.upvotes} />
-                {/* Comment button */}
-                <button className="text-sm text-blue-600 hover:underline">
-                  Add Comment
-                </button>
-                {/* Comment button */}
-                <button className="text-sm text-blue-600 hover:underline">
-                  Edit
-                </button>
+                <ToggleVote
+                  upvotes={data?.upvotes}
+                  questionId={data?._id}
+                  type={"question"}
+                />
+
+                {user && data?.author._id === user?._id && (
+                  <button
+                    onClick={handleEdit}
+                    className="text-sm text-blue-600 hover:underline"
+                  >
+                    Edit
+                  </button>
+                )}
               </div>
 
               {/* Author info */}
@@ -87,7 +123,7 @@ export default function QuestionDetail() {
                 <img
                   src={data?.author.avatar}
                   alt={data?.author.username}
-                  className="w-8 h-8 rounded-full border"
+                  className="w-8 h-8 rounded-full border object-cover"
                 />
                 <div>
                   <p className="font-medium">{data?.author.username}</p>
@@ -97,6 +133,8 @@ export default function QuestionDetail() {
                 </div>
               </div>
             </div>
+            <CommentList parentId={data?._id} parentType="Question" />
+            <AnswerList questionId={data?._id} />
           </div>
           <QuestionSidebar />
         </div>
@@ -105,41 +143,56 @@ export default function QuestionDetail() {
   );
 }
 
-export function ToggleVote({ upvotes = [] }) {
+export function ToggleVote({ upvotes = [], questionId, type }) {
   const { user } = useAuth();
+  const { requireLogin, Dialog } = useRequireLogin();
 
   const [count, setCount] = useState(upvotes.length);
   const [voted, setVoted] = useState(false);
 
   useEffect(() => {
     if (user && upvotes) {
-      setVoted(upvotes?.includes(user._id));
+      if (type === "question") {
+        setVoted(upvotes?.includes(user._id));
+      } else {
+        setVoted(upvotes?.some((like) => like.user === user._id));
+      }
       setCount(upvotes.length);
     }
-  }, [user, upvotes]);
+  }, [user, upvotes, type]);
 
-  const handleVote = () => {
-    if (voted) {
-      setCount(count - 1);
-      setVoted(false);
-    } else {
-      setCount(count + 1);
-      setVoted(true);
+  const handleVote = async () => {
+    if (!requireLogin()) return;
+    try {
+      if (type === "question") {
+        const res = await _toggleUpvote({ questionId });
+        setCount(res.count);
+        setVoted(res.upvoted);
+      } else {
+        const res = await _toggleLike({ answerId: questionId });
+        setCount(res.likeCount);
+        setVoted(res.liked);
+      }
+    } catch (error) {
+      console.log(error);
     }
   };
 
   return (
-    <button
-      onClick={handleVote}
-      className={`flex items-center gap-2 px-3 py-1 rounded-lg border h-fit transition-colors
-        ${voted ? "bg-blue-500 text-white border-blue-500" : "bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200"}`}
-    >
-      <ThumbsUp
-        size={18}
-        className={voted ? "fill-white text-white" : "text-gray-600"}
-      />
-      {voted ? "Voted" : "Vote"}
-      <span className="font-medium">{count}</span>
-    </button>
+    <>
+      <button
+        onClick={handleVote}
+        className={`flex items-center gap-2 px-3 py-1 rounded-lg border h-fit transition-colors
+        ${voted ? "bg-[#1b75d0] hover:bg-[#155ca2] text-white" : "bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200"}`}
+      >
+        <ThumbsUp
+          size={18}
+          className={voted ? "fill-white text-white" : "text-gray-600"}
+        />
+        {voted ? "Voted" : "Vote"}
+        <span className="font-medium">{count}</span>
+      </button>
+      {Dialog}
+    </>
   );
 }

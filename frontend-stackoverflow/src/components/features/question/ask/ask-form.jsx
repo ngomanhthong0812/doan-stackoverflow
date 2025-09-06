@@ -3,7 +3,7 @@ import RichTextEditor from "./rich-text-editor";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { _getTags } from "@/services/tag";
-import { _createQuestions } from "@/services/questions";
+import { _createQuestions } from "@/services/question";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/auth";
 import { useRouter } from "@tanstack/react-router";

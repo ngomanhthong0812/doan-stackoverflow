@@ -43,6 +43,7 @@ exports.getAllQuestions = async (req, res, next) => {
 exports.toggleUpvote = async (req, res, next) => {
   try {
     const { questionId } = req.params;
+    console.log(req.user._id);
     const result = await questionService.toggleUpvote(questionId, req.user._id);
     res.json(result);
   } catch (err) {
@@ -118,6 +119,8 @@ exports.getQuestionsByUser = async (req, res, next) => {
 exports.getQuestionsById = async (req, res, next) => {
   try {
     const questions = await questionService.getQuestionsById(req.params.id);
+    await questionService.incrementViews(questions._id);
+
     res.json(questions);
   } catch (err) {
     if (err.message === "NOT_ALLOWED") {

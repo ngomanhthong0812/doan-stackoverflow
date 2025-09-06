@@ -2,10 +2,11 @@ const Answer = require('../models/Answer');
 const commentService = require('./commentService');
 const User = require('../models/User');
 
-exports.createAnswer = async ({ content, question, author, image }) => {
-    const answer = await Answer.create({ content, question, author, image });
+exports.createAnswer = async ({ content, question, author }) => {
+    const answer = await Answer.create({ content, question, author });
     await User.findByIdAndUpdate(author, { $inc: { reputation: 10 } });
-    return answer;
+    const populated = await answer.populate("author", "username reputation");
+    return populated;
 };
 
 exports.getAnswersByQuestion = async (questionId) => {
@@ -27,7 +28,6 @@ exports.deleteAnswerById = async (answerId) => {
 exports.toggleLike = async (answerId, userId) => {
     const answer = await Answer.findById(answerId);
     if (!answer) throw new Error('Answer not found');
-    if (answer.author.toString() === userId.toString()) throw new Error('Không thể like bài của mình');
 
     const likeIndex = answer.likes.findIndex(like => like.user.toString() === userId.toString());
     let liked;
@@ -52,7 +52,7 @@ exports.getLikeHistory = async (answerId) => {
     return answer.likes;
 };
 
-exports.updateAnswer = async (answerId, newContent, userId) => {
+exports.updateAnswer = async (answerId, content, userId) => {
     const answer = await Answer.findById(answerId);
     if (!answer) throw new Error('NOT_FOUND');
 
@@ -60,7 +60,7 @@ exports.updateAnswer = async (answerId, newContent, userId) => {
         throw new Error('FORBIDDEN');
     }
 
-    answer.content = newContent;
+    answer.content = content;
     await answer.save();
 
     return answer;

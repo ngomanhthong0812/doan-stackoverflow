@@ -21,7 +21,7 @@ function RootComponent() {
   const isNoLayoutPage = noLayoutPages.includes(location.pathname);
 
   // Trang private cần login
-  const privatePages = ["/account"];
+  const privatePages = ["/account", "/questions/ask"];
   const isPrivatePage = privatePages.includes(location.pathname);
 
   // Chặn truy cập trang private nếu chưa login
@@ -43,10 +43,13 @@ function RootComponent() {
   return (
     <>
       {isNoLayoutPage ? (
-        <main className="flex h-screen items-center justify-center bg-gray-100">
-          <Outlet />
-          <Toaster />
-        </main>
+        <div className="flex flex-col min-h-screen">
+          <Header />
+          <main className="flex h-screen items-center justify-center bg-gray-100">
+            <Outlet />
+            <Toaster />
+          </main>
+        </div>
       ) : (
         <div className="flex flex-col min-h-screen">
           <Header />

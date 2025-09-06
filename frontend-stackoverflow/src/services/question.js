@@ -26,3 +26,8 @@ export const _createQuestions = async ({ title, content, tags, author }) => {
   });
   return response.data;
 };
+
+export const _toggleUpvote = async ({ questionId }) => {
+  const response = await axios.post(`/questions/${questionId}/upvote`);
+  return response.data;
+};

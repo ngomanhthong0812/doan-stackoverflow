@@ -37,8 +37,6 @@ instance.interceptors.response.use(
         // Lưu accessToken mới
         localStorage.setItem("accessToken", data.accessToken);
 
-        console.log(data);
-
         // Update header và retry request cũ
         originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
         return instance(originalRequest);
