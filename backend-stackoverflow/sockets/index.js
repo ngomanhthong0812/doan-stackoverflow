@@ -29,48 +29,50 @@ function handleSocketConnection(socket) {
     io.emit("getOnlineUsers", onlineUsers);
   });
 
-  // Join room theo postId (question/answer)
-  socket.on("joinPost", (postId) => {
-    socket.join(postId);
+  socket.on("joinQuestion", ({ parentId, parentType }) => {
+    socket.join(`${parentType}_${parentId}`);
+  });
+
+  socket.on("joinComment", (commentId) => {
+    socket.join(`comment_${commentId}`);
+    console.log(`Socket ${socket.id} joined comment_${commentId}`);
   });
 
   // Khi có comment mới
-  socket.on(
-    "newComment",
-    ({ senderId, targetType, targetId, targetOwnerId, comment }) => {
-      const payload = {
-        senderId,
-        senderName: comment.authorName,
-        content: comment.content,
-        commentId: comment._id,
-        createdAt: comment.createdAt,
-        targetType,
-        targetId,
-      };
+  socket.on("newComment", ({ parentType, parentId, newComment }) => {
+    // Gửi tới tất cả đang xem post/answer này
+    io.to(`${parentType}_${parentId}`).emit("receiveComment", {
+      newComment,
+      parentType,
+      parentId,
+    });
 
-      // Gửi tới tất cả đang xem bài viết này
-      io.to(targetId).emit("receiveComment", payload);
+    console.log(parentType, parentId);
 
-      // Gửi notification cho chủ bài viết/answer
-      if (senderId !== targetOwnerId) {
-        emitToUser(targetOwnerId, "getNotification", {
-          senderId,
-          description:
-            targetType === "question"
-              ? `${comment.authorName} đã comment câu hỏi của bạn`
-              : `${comment.authorName} đã comment answer của bạn`,
-          commentId: comment._id,
-          targetType,
-          targetId,
-        });
-      }
-    }
-  );
+    // Gửi notification cho chủ post/answer
+    // if (senderId !== targetOwnerId) {
+    //   emitToUser(targetOwnerId, "getNotification", {
+    //     senderId,
+    //     description:
+    //       targetType === "question"
+    //         ? `${comment.authorName} đã comment câu hỏi của bạn`
+    //         : `${comment.authorName} đã comment answer của bạn`,
+    //     commentId: comment._id,
+    //     targetType,
+    //     targetId,
+    //   });
+    // }
+  });
 
   // Khi có reply comment
   socket.on(
     "newReply",
-    ({ senderId, commentOwnerId, commentId, senderName }) => {
+    ({ senderId, commentOwnerId, commentId, senderName, comment }) => {
+      io.to(`comment_${commentId}`).emit("receiveReply", {
+        ...comment,
+        parentCommentId: commentId,
+      });
+
       if (senderId !== commentOwnerId) {
         emitToUser(commentOwnerId, "getNotification", {
           senderId,

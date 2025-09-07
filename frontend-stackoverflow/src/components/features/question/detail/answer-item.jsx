@@ -96,7 +96,7 @@ export default function AnswerItem({ data, fetchData }) {
         <div className="flex items-center gap-2 text-sm">
           <img
             src={
-              data?.author.avata ||
+              data?.author.avatar ||
               "https://avatars.githubusercontent.com/u/000000?v=4"
             }
             alt={data?.author.username}

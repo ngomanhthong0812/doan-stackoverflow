@@ -5,6 +5,7 @@ import { _createComments } from "@/services/comment";
 import { toast } from "sonner";
 import { useRequireLogin } from "@/hooks/use-require-login";
 import io from "socket.io-client";
+import { useAuth } from "@/contexts/auth";
 const socket = io(import.meta.env.VITE_API_URL);
 
 export default function CommentForm({
@@ -13,10 +14,8 @@ export default function CommentForm({
   parentType,
   parentId,
   parentComment = null,
-  postOwnerId,
-  parentCommentOwner,
-  user,
 }) {
+  const { user } = useAuth();
   const [comment, setComment] = useState("");
   const { requireLogin, Dialog } = useRequireLogin();
 
@@ -41,29 +40,19 @@ export default function CommentForm({
       setComment("");
 
       // ---- emit socket ----
+      if (!user) return;
+
       if (!parentComment) {
-        // comment gốc trên question/answer
         socket.emit("newComment", {
-          senderId: user._id,
-          targetType: parentType,
-          targetId: parentId,
-          targetOwnerId: postOwnerId,
-          comment: {
-            ...newComment,
-            authorName: user.username,
-          },
+          parentType,
+          parentId,
+          newComment,
         });
       } else {
-        // reply comment
         socket.emit("newReply", {
-          senderId: user._id,
-          commentOwnerId: parentCommentOwner,
-          parentCommentId: parentComment,
-          postId: parentId,
-          comment: {
-            ...newComment,
-            authorName: user.username,
-          },
+          parentType,
+          parentId,
+          newComment,
         });
       }
     } catch (error) {

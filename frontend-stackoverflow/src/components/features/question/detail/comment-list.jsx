@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ThumbsUp, MessageSquare, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import CommentForm from "./comment-form";
 import { _deleteComment, _getComments, _toggleLike } from "@/services/comment";
 import { formatTimeAgo } from "@/utils/format-time-ago";
@@ -13,12 +13,17 @@ import io from "socket.io-client";
 const socket = io(import.meta.env.VITE_API_URL);
 
 export default function CommentList({ parentType, parentId }) {
-  const { user } = useAuth();
   const [openNewComment, setOpenNewComment] = useState(false);
   const [comments, setComments] = useState([]);
-  const [data, setData] = useState(0);
+  const [data, setData] = useState(null);
   const [page, setPage] = useState(1);
   const perPage = 2;
+
+  const pageLimitRef = useRef(page * perPage);
+
+  useEffect(() => {
+    pageLimitRef.current = page * perPage;
+  }, [page, perPage]);
 
   const fetchComments = useCallback(async () => {
     const res = await _getComments({
@@ -28,54 +33,85 @@ export default function CommentList({ parentType, parentId }) {
       perPage,
     });
 
-    if (page === 1) {
-      setComments(res.data);
-    } else {
-      setComments((prev) => [...prev, ...res.data]);
-    }
-
+    // set data from server (total, totalPages...)
     setData(res);
+
+    // merge: giữ các comment hiện có (có thể đã được thêm từ socket),
+    // rồi thêm những comment từ API mà chưa có trong state
+    setComments((prev) => {
+      const ids = new Set(prev.map((c) => c._id));
+      const newFromApi = res.data.filter((c) => !ids.has(c._id));
+
+      // prev là thứ tự: [socket-newest, older...]
+      const merged = [...prev, ...newFromApi];
+
+      // giữ tối đa page * perPage để tránh hiển thị vượt (nếu muốn)
+      return merged.slice(0, page * perPage);
+    });
   }, [page, parentType, parentId]);
 
+  // initial / page change
   useEffect(() => {
     fetchComments();
-  }, [fetchComments, page, parentType, parentId]);
+  }, [fetchComments]);
 
+  // socket listeners
   useEffect(() => {
-    if (!user) return;
+    if (!parentId) return;
 
-    socket.emit("joinPost", parentId);
+    if (
+      parentType &&
+      (parentType.toLowerCase() === "question" ||
+        parentType.toLowerCase() === "answer")
+    ) {
+      socket.emit("joinQuestion", { parentId, parentType });
+    }
 
-    socket.on("receiveComment", (comment) => {
-      setComments((prev) => [comment, ...prev]);
-    });
+    const onReceiveComment = ({
+      parentType: type,
+      parentId: id,
+      newComment,
+    }) => {
+      if (type !== parentType || id !== parentId) return;
 
-    socket.on("receiveReply", (reply) => {
+      setComments((prev) => {
+        if (prev.some((c) => c._id === newComment._id)) return prev;
+        return [newComment, ...prev];
+      });
+    };
+
+    const onReceiveReply = (reply) => {
+      console.log("Socket receiveReply:", reply);
       setComments((prev) =>
         prev.map((c) => {
           if (c._id === reply.parentCommentId) {
-            return { ...c, children: [...(c.children || []), reply] };
+            return { ...c, children: [...(c.children ?? []), reply] };
           }
           return c;
         })
       );
-    });
+    };
+
+    socket.on("receiveComment", onReceiveComment);
+    socket.on("receiveReply", onReceiveReply);
 
     return () => {
-      socket.off("receiveComment");
-      socket.off("receiveReply");
+      socket.off("receiveComment", onReceiveComment);
+      socket.off("receiveReply", onReceiveReply);
     };
-  }, [parentId, user]);
+  }, [parentId, parentType, page, perPage]);
 
   return (
     <section>
-      <h1 className="!text-[20px] mt-4 mb-2">{data?.total} Comments</h1>
+      <h1 className="!text-[20px] mt-4 mb-2">{data?.total ?? 0} Comments</h1>
+
       <button
         className="text-sm text-blue-600 hover:underline"
         onClick={() => setOpenNewComment((prev) => !prev)}
       >
         Add Comment
       </button>
+
       <CommentForm
         setOpen={setOpenNewComment}
         open={openNewComment}
@@ -99,7 +135,7 @@ export default function CommentList({ parentType, parentId }) {
           className="text-sm text-blue-600 hover:underline mt-3 cursor-pointer"
           onClick={() => setPage((prev) => prev + 1)}
         >
-          show {Math.max(data?.total - page * perPage, 0)} more comments
+          show {Math.max((data?.total ?? 0) - page * perPage, 0)} more comments
         </p>
       )}
     </section>
@@ -217,8 +253,6 @@ export function CommentItem({ comment, fetchComments }) {
             parentComment={comment._id}
             parentType={comment.parentType}
             parentId={comment.parentId}
-            parentCommentOwner={comment.author._id}
-            user={user}
           />
 
           {/* Reply comments */}

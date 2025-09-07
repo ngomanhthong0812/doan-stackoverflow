@@ -4,8 +4,8 @@ const User = require("../models/User");
 exports.toggleLike = async (commentId, userId) => {
   const comment = await Comment.findById(commentId);
   if (!comment) throw new Error("Comment not found");
-//   if (comment.author.toString() === userId.toString())
-//     throw new Error("Không thể like bình luận của mình");
+  //   if (comment.author.toString() === userId.toString())
+  //     throw new Error("Không thể like bình luận của mình");
 
   const likeIndex = comment.likes.findIndex(
     (like) => like.user.toString() === userId.toString()
@@ -48,7 +48,11 @@ exports.createComment = async ({
     author,
   });
   await User.findByIdAndUpdate(author, { $inc: { reputation: 2 } });
-  return comment;
+  const populated = await comment.populate(
+    "author",
+    "username avatar reputation"
+  );
+  return populated;
 };
 
 exports.getCommentsByAnswer = async (answerId) => {
