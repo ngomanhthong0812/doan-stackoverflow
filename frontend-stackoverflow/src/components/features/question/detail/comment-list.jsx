@@ -7,12 +7,14 @@ import { formatTimeAgo } from "@/utils/format-time-ago";
 import { useAuth } from "@/contexts/auth";
 import { useRequireLogin } from "@/hooks/use-require-login";
 import { toast } from "sonner";
+import { socket } from "@/lib/socket";
 
-import io from "socket.io-client";
-
-const socket = io(import.meta.env.VITE_API_URL);
-
-export default function CommentList({ parentType, parentId }) {
+export default function CommentList({
+  parentType,
+  parentId,
+  targetOwnerId,
+  questionId,
+}) {
   const [openNewComment, setOpenNewComment] = useState(false);
   const [comments, setComments] = useState([]);
   const [data, setData] = useState(null);
@@ -81,11 +83,13 @@ export default function CommentList({ parentType, parentId }) {
     };
 
     const onReceiveReply = (reply) => {
-      console.log("Socket receiveReply:", reply);
       setComments((prev) =>
         prev.map((c) => {
-          if (c._id === reply.parentCommentId) {
-            return { ...c, children: [...(c.children ?? []), reply] };
+          if (c._id === reply.newComment.parentComment) {
+            return {
+              ...c,
+              children: [reply.newComment, ...(c.children ?? [])],
+            };
           }
           return c;
         })
@@ -117,6 +121,8 @@ export default function CommentList({ parentType, parentId }) {
         open={openNewComment}
         parentType={parentType}
         parentId={parentId}
+        targetOwnerId={targetOwnerId}
+        questionId={questionId}
       />
 
       <div className="flex flex-col mt-2">
@@ -126,6 +132,7 @@ export default function CommentList({ parentType, parentId }) {
               key={comment._id}
               comment={comment}
               fetchComments={fetchComments}
+              questionId={questionId}
             />
           ))}
       </div>
@@ -142,7 +149,7 @@ export default function CommentList({ parentType, parentId }) {
   );
 }
 
-export function CommentItem({ comment, fetchComments }) {
+export function CommentItem({ comment, fetchComments, questionId }) {
   const { user } = useAuth();
   const { requireLogin, Dialog } = useRequireLogin();
 
@@ -165,6 +172,19 @@ export function CommentItem({ comment, fetchComments }) {
       const res = await _toggleLike({ commentId: comment._id });
       setCount(res.likeCount);
       setVoted(res.liked);
+
+      if (res.liked) {
+        socket.emit("newLike", {
+          parentType: "Comment",
+          parentId: comment._id,
+          newLike: {
+            userId: user._id,
+            username: user.username,
+          },
+          targetOwnerId: comment.author._id,
+          questionId,
+        });
+      }
     } catch (error) {
       console.log(error);
     }
@@ -253,6 +273,8 @@ export function CommentItem({ comment, fetchComments }) {
             parentComment={comment._id}
             parentType={comment.parentType}
             parentId={comment.parentId}
+            targetOwnerId={comment?.author._id}
+            questionId={questionId}
           />
 
           {/* Reply comments */}

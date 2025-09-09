@@ -7,13 +7,14 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { DialogDescription } from "@radix-ui/react-dialog";
 
 export function RequireLoginDialog({ open, setOpen }) {
   const navigate = useNavigate();
 
   const handleLogin = () => {
     setOpen(false);
-    navigate("/login");
+    navigate({ to: "/login" });
   };
 
   return (
@@ -21,8 +22,10 @@ export function RequireLoginDialog({ open, setOpen }) {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Login Required</DialogTitle>
+          <DialogDescription>
+            You must login to perform this action.
+          </DialogDescription>
         </DialogHeader>
-        <p>{"You must login to perform this action."}</p>
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>
             Cancel

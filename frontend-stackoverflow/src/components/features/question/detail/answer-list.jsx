@@ -4,8 +4,9 @@ import AnswerItem from "./answer-item";
 import { toast } from "sonner";
 import RichTextEditor from "../ask/rich-text-editor";
 import { useRequireLogin } from "@/hooks/use-require-login";
+import { socket } from "@/lib/socket";
 
-export default function AnswerList({ questionId }) {
+export default function AnswerList({ questionId, questionOwnerId }) {
   const { requireLogin, Dialog } = useRequireLogin();
 
   const [answers, setAnswers] = useState([]);
@@ -34,6 +35,14 @@ export default function AnswerList({ questionId }) {
         setYourAnswer("");
         setAnswers((prev) => [newAnswer, ...prev]);
         toast.success("Your answer has been posted successfully!");
+
+        if (socket && questionOwnerId) {
+          socket.emit("newAnswer", {
+            questionId,
+            newAnswer,
+            questionOwnerId,
+          });
+        }
       } catch (error) {
         console.log(error);
         toast.error("Failed to post your answer. Please try again.");
@@ -59,6 +68,7 @@ export default function AnswerList({ questionId }) {
                     key={data._id}
                     data={data}
                     fetchData={fetchData}
+                    questionId={questionId}
                   />
                 )
             )}

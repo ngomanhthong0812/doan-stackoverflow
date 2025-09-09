@@ -19,6 +19,7 @@ import { Route as appQuestionsIndexRouteImport } from './routes/(app)/questions/
 import { Route as appQuestionsAskRouteImport } from './routes/(app)/questions/ask'
 import { Route as appQuestionsIdRouteImport } from './routes/(app)/questions/$id'
 import { Route as appQuestionsEditIdRouteImport } from './routes/(app)/questions/edit/$id'
+import { Route as appQuestionsEditPreviewIdRouteImport } from './routes/(app)/questions/edit-preview/$id'
 
 const appIndexRoute = appIndexRouteImport.update({
   id: '/(app)/',
@@ -70,6 +71,12 @@ const appQuestionsEditIdRoute = appQuestionsEditIdRouteImport.update({
   path: '/questions/edit/$id',
   getParentRoute: () => rootRouteImport,
 })
+const appQuestionsEditPreviewIdRoute =
+  appQuestionsEditPreviewIdRouteImport.update({
+    id: '/(app)/questions/edit-preview/$id',
+    path: '/questions/edit-preview/$id',
+    getParentRoute: () => rootRouteImport,
+  })
 
 const rootRouteChildren = {
   appAccountRoute: appAccountRoute,
@@ -81,6 +88,7 @@ const rootRouteChildren = {
   appQuestionsIdRoute: appQuestionsIdRoute,
   appQuestionsAskRoute: appQuestionsAskRoute,
   appQuestionsIndexRoute: appQuestionsIndexRoute,
+  appQuestionsEditPreviewIdRoute: appQuestionsEditPreviewIdRoute,
   appQuestionsEditIdRoute: appQuestionsEditIdRoute,
 }
 export const routeTree = rootRouteImport._addFileChildren(rootRouteChildren)

@@ -5,6 +5,7 @@ const User = require("../models/User");
 const cacheKeys = require("../utils/cacheKeys");
 const cache = require("../services/cacheService");
 const Tag = require("../models/Tag"); // Thêm ở đầu
+const QuestionEdit = require("../models/QuestionEdit");
 
 exports.createQuestion = async ({ title, content, tags, author }) => {
   const question = await Question.create({
@@ -159,20 +160,37 @@ exports.toggleUpvote = async (questionId, userId) => {
 
 exports.updateQuestion = async (id, data, userId) => {
   const question = await Question.findById(id)
-    .populate("author", "username avatar")
+    .populate("author", "_id username avatar")
     .populate("tags");
   if (!question) throw new Error("NOT_FOUND");
 
-  if (question.author.toString() !== userId.toString()) {
-    throw new Error("FORBIDDEN");
+  let updatedQuestion = null;
+  let editStatus = "pending";
+
+  if (question.author._id.toString() === userId.toString()) {
+    updatedQuestion = await Question.findByIdAndUpdate(id, data, { new: true });
+    editStatus = "approved";
+  } else {
+    updatedQuestion = question;
   }
-  const updateQuestion = await Question.findByIdAndUpdate(id, data, {
-    new: true,
+
+  // Tạo QuestionEdit để lưu lịch sử
+  await QuestionEdit.create({
+    question: id,
+    editor: userId,
+    proposedTitle: data.title,
+    proposedContent: data.content,
+    proposedImages: data.images || [],
+    proposedTags: data.tags || [],
+    status: editStatus,
+    reviewedBy: editStatus === "approved" ? userId : null,
   });
-  if (data.tags) {
+
+  if (data.tags && question.author._id.toString() === userId.toString()) {
     await cache.del(cacheKeys.popularTags);
   }
-  return updateQuestion;
+
+  return updatedQuestion;
 };
 
 exports.deleteQuestion = async (id, user) => {

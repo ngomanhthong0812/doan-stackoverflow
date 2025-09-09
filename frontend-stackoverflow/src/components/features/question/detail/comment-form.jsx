@@ -4,9 +4,8 @@ import { useState } from "react";
 import { _createComments } from "@/services/comment";
 import { toast } from "sonner";
 import { useRequireLogin } from "@/hooks/use-require-login";
-import io from "socket.io-client";
 import { useAuth } from "@/contexts/auth";
-const socket = io(import.meta.env.VITE_API_URL);
+import { socket } from "@/lib/socket";
 
 export default function CommentForm({
   open = false,
@@ -14,6 +13,8 @@ export default function CommentForm({
   parentType,
   parentId,
   parentComment = null,
+  targetOwnerId,
+  questionId,
 }) {
   const { user } = useAuth();
   const [comment, setComment] = useState("");
@@ -47,12 +48,16 @@ export default function CommentForm({
           parentType,
           parentId,
           newComment,
+          targetOwnerId,
+          questionId,
         });
       } else {
         socket.emit("newReply", {
           parentType,
           parentId,
           newComment,
+          commentOwnerId: targetOwnerId,
+          questionId,
         });
       }
     } catch (error) {

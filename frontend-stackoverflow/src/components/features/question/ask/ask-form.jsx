@@ -3,40 +3,62 @@ import RichTextEditor from "./rich-text-editor";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { _getTags } from "@/services/tag";
-import { _createQuestions } from "@/services/question";
+import { _createQuestions, _updateQuestion } from "@/services/question";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/auth";
 import { useRouter } from "@tanstack/react-router";
 
-export default function AskForm() {
+export default function AskForm({ defaultValues }) {
   const router = useRouter();
   const { user } = useAuth();
-  const [title, setTitle] = useState("");
-  const [details, setDetails] = useState("");
-  const [tags, setTags] = useState([]);
-  const [step, setStep] = useState(1);
+
+  const isEdit = !!defaultValues?._id;
+
+  const [title, setTitle] = useState(defaultValues?.title || "");
+  const [details, setDetails] = useState(defaultValues?.content || "");
+  const [tags, setTags] = useState(defaultValues?.tags || []);
+  const [step, setStep] = useState(defaultValues ? 3 : 1);
+
+  useEffect(() => {
+    if (defaultValues) {
+      setTitle(defaultValues.title || "");
+      setDetails(defaultValues.content || "");
+      setTags(defaultValues.tags || []);
+      setStep(3);
+    }
+  }, [defaultValues]);
 
   const handleSubmit = async () => {
     if (!user) return;
+
+    const payload = {
+      title,
+      content: details,
+      tags: tags.map((t) => t._id),
+      author: user._id,
+    };
+
     try {
-      const tagIds = tags.map((tag) => tag._id);
+      let res;
+      if (isEdit) {
+        // Edit
+        res = await _updateQuestion({
+          questionId: defaultValues._id,
+          ...payload,
+        });
+        toast.success("Question updated successfully");
+      } else {
+        // Add new
+        res = await _createQuestions(payload);
+        toast.success("Question created successfully");
+      }
 
-      const payload = {
-        title,
-        content: details,
-        tags: tagIds,
-        author: user._id,
-      };
-
-      const res = await _createQuestions(payload);
-
-      toast.success("Question created successfully");
       if (res?._id) {
         router.navigate({ to: `/questions/${res._id}` });
       }
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to create question");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to submit question");
     }
   };
 

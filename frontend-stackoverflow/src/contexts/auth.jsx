@@ -1,3 +1,4 @@
+import { socket } from "@/lib/socket";
 import { _getAccount, _login, _logout, _register } from "@/services/auth";
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { toast } from "sonner";
@@ -34,6 +35,17 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     fetchUser();
   }, []);
+
+  useEffect(() => {
+    if (!user?._id) return;
+    if (user?._id) {
+      socket.emit("newUser", {
+        userId: user._id,
+        senderName: user.username,
+        senderAvatar: user.avatar,
+      });
+    }
+  }, [user]);
 
   const login = async ({ email, password }) => {
     try {

@@ -1,7 +1,17 @@
+const { createNotification } = require("../services/notificationService");
+
 let onlineUsers = [];
 
 const addNewUser = (userId, socketId, senderName, senderAvatar) => {
-  if (!onlineUsers.some((user) => user.userId === userId)) {
+  const existingUser = onlineUsers.find((user) => user.userId === userId);
+
+  if (existingUser) {
+    // Cập nhật socketId mới nếu user đã tồn tại
+    existingUser.socketId = socketId;
+    existingUser.senderName = senderName;
+    existingUser.senderAvatar = senderAvatar;
+  } else {
+    // Thêm user mới
     onlineUsers.push({ userId, socketId, senderName, senderAvatar });
   }
 };
@@ -18,6 +28,8 @@ const emitToUser = (userId, event, payload) => {
   const user = getUser(userId);
   if (user) {
     io.to(user.socketId).emit(event, payload);
+  } else {
+    console.log(`User ${userId} không online`);
   }
 };
 
@@ -39,49 +51,135 @@ function handleSocketConnection(socket) {
   });
 
   // Khi có comment mới
-  socket.on("newComment", ({ parentType, parentId, newComment }) => {
-    // Gửi tới tất cả đang xem post/answer này
-    io.to(`${parentType}_${parentId}`).emit("receiveComment", {
-      newComment,
-      parentType,
-      parentId,
-    });
+  socket.on(
+    "newComment",
+    async ({ parentType, parentId, newComment, targetOwnerId, questionId }) => {
+      // Gửi tới tất cả đang xem post/answer này
+      io.to(`${parentType}_${parentId}`).emit("receiveComment", {
+        newComment,
+        parentType,
+        parentId,
+      });
 
-    console.log(parentType, parentId);
-
-    // Gửi notification cho chủ post/answer
-    // if (senderId !== targetOwnerId) {
-    //   emitToUser(targetOwnerId, "getNotification", {
-    //     senderId,
-    //     description:
-    //       targetType === "question"
-    //         ? `${comment.authorName} đã comment câu hỏi của bạn`
-    //         : `${comment.authorName} đã comment answer của bạn`,
-    //     commentId: comment._id,
-    //     targetType,
-    //     targetId,
-    //   });
-    // }
-  });
+      // Gửi notification cho chủ post/answer
+      if (newComment.author._id !== targetOwnerId) {
+        const payload = {
+          senderId: newComment.author._id,
+          senderName: newComment.author.username,
+          receiverId: targetOwnerId,
+          type: "comment",
+          postId: questionId,
+          commentId: newComment._id,
+          link: `/questions/${parentId}`,
+          description:
+            parentType === "Question"
+              ? `${newComment.author.username} đã bình luận câu hỏi của bạn`
+              : `${newComment.author.username} đã bình luận câu trả lời của bạn`,
+          isRead: false,
+          createdAt: new Date(),
+        };
+        const notification = await createNotification(payload);
+        emitToUser(targetOwnerId, "getNotification", notification);
+      }
+    }
+  );
 
   // Khi có reply comment
   socket.on(
     "newReply",
-    ({ senderId, commentOwnerId, commentId, senderName, comment }) => {
-      io.to(`comment_${commentId}`).emit("receiveReply", {
-        ...comment,
-        parentCommentId: commentId,
+    async ({
+      parentType,
+      parentId,
+      newComment,
+      commentOwnerId,
+      questionId,
+    }) => {
+      io.to(`${parentType}_${parentId}`).emit("receiveReply", {
+        newComment,
+        parentType,
+        parentId,
       });
 
-      if (senderId !== commentOwnerId) {
-        emitToUser(commentOwnerId, "getNotification", {
-          senderId,
-          description: `${senderName} đã trả lời comment của bạn`,
-          commentId,
-        });
+      // Gửi notification cho chủ comment
+      if (newComment.author._id !== commentOwnerId) {
+        const payload = {
+          senderId: newComment.author._id,
+          senderName: newComment.author.username,
+          receiverId: commentOwnerId,
+          type: "reply",
+          postId: questionId,
+          commentId: newComment._id,
+          link: `/questions/${parentId}#comment-${newComment._id}`,
+          description: `${newComment.author.username} đã trả lời bình luận của bạn`,
+          isRead: false,
+          createdAt: new Date(),
+        };
+
+        const notification = await createNotification(payload);
+        emitToUser(commentOwnerId, "getNotification", notification);
       }
     }
   );
+
+  // Khi có like mới
+  socket.on(
+    "newLike",
+    async ({
+      parentType,
+      parentId,
+      newLike,
+      targetOwnerId,
+      commentId,
+      questionId,
+    }) => {
+      if (newLike.userId !== targetOwnerId) {
+        const payload = {
+          senderId: newLike.userId,
+          senderName: newLike.username,
+          receiverId: targetOwnerId,
+          type: "like",
+          postId: questionId,
+          link:
+            parentType === "Question"
+              ? `/questions/${parentId}`
+              : parentType === "Answer"
+              ? `/questions/${parentId}#answer-${parentId}`
+              : `/questions/${parentId}#comment-${commentId}`,
+          description:
+            parentType === "Question"
+              ? `${newLike.username} đã thích câu hỏi của bạn`
+              : parentType === "Answer"
+              ? `${newLike.username} đã thích câu trả lời của bạn`
+              : `${newLike.username} đã thích bình luận của bạn`,
+          isRead: false,
+          createdAt: new Date(),
+        };
+
+        const notification = await createNotification(payload);
+        emitToUser(targetOwnerId, "getNotification", notification);
+      }
+    }
+  );
+
+  // Khi có answer mới
+  socket.on("newAnswer", async ({ questionId, newAnswer, questionOwnerId }) => {
+    if (newAnswer.author._id !== questionOwnerId) {
+      const payload = {
+        senderId: newAnswer.author._id,
+        senderName: newAnswer.author.username,
+        receiverId: questionOwnerId,
+        type: "answer",
+        postId: questionId,
+        link: `/questions/${questionId}#answer-${newAnswer._id}`,
+        description: `${newAnswer.author.username} đã trả lời câu hỏi của bạn`,
+        isRead: false,
+        createdAt: new Date(),
+      };
+
+      const notification = await createNotification(payload);
+      emitToUser(questionOwnerId, "getNotification", notification);
+    }
+  });
 
   socket.on("disconnect", () => {
     removeUser(socket.id);

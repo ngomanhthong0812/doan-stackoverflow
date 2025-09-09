@@ -26,15 +26,13 @@ export default function QuestionEdit() {
     fetchQuestion();
   }, [fetchQuestion]);
 
-  console.log(data);
-
   return (
     <section className="flex">
       <main className="flex-1">
         <div className="flex items-center justify-between pl-6">
           <h1 className="!text-2xl font-bold">Edit a question</h1>
         </div>
-        <AskForm />
+        {data && <AskForm defaultValues={data} />}
       </main>
       <AskSidebar />
     </section>

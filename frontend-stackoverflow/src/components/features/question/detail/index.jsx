@@ -2,9 +2,12 @@ import { useNavigate, useParams } from "@tanstack/react-router";
 
 import { Button } from "@/components/ui/button";
 import QuestionSidebar from "../question-sidebar";
-import { Link } from "@tanstack/react-router";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { _getQuestionById, _toggleUpvote } from "@/services/question";
+import { useEffect, useState } from "react";
+import {
+  _getPendingEdits,
+  _getQuestionById,
+  _toggleUpvote,
+} from "@/services/question";
 import { formatTimeAgo } from "@/utils/format-time-ago";
 import { ThumbsUp } from "lucide-react";
 import { useAuth } from "@/contexts/auth";
@@ -12,32 +15,44 @@ import CommentList from "./comment-list";
 import AnswerList from "./answer-list";
 import { _createAnswer, _toggleLike } from "@/services/answer";
 import { useRequireLogin } from "@/hooks/use-require-login";
+import { socket } from "@/lib/socket";
 
 export default function QuestionDetail() {
   const { id } = useParams({ from: "/(app)/questions/$id" });
-  const navigate = useNavigate();
   const { user } = useAuth();
+
+  const navigate = useNavigate();
   const { requireLogin, Dialog } = useRequireLogin();
 
   const [data, setData] = useState(null);
+  const [pendingEdits, setPendingEdits] = useState([]);
 
-  const didFetch = useRef(false);
+  useEffect(() => {
+    const fetchQuestion = async () => {
+      try {
+        const res = await _getQuestionById(id);
+        setData(res);
+      } catch (err) {
+        console.error("Failed to fetch question:", err);
+      }
+    };
 
-  const fetchQuestion = useCallback(async () => {
-    try {
-      const res = await _getQuestionById(id);
-      setData(res);
-    } catch (err) {
-      console.error("Failed to fetch question:", err);
-    }
+    fetchQuestion();
   }, [id]);
 
   useEffect(() => {
-    if (didFetch.current) return;
-    didFetch.current = true;
+    if (!data?.author._id === user._id) return;
+    const fetchPendingEdits = async () => {
+      try {
+        const edits = await _getPendingEdits(id);
+        setPendingEdits(edits);
+      } catch (err) {
+        console.error("Failed to fetch pending edits:", err);
+      }
+    };
 
-    fetchQuestion();
-  }, [fetchQuestion]);
+    fetchPendingEdits();
+  }, [id, user, data]);
 
   const handleEdit = () => {
     navigate({ to: `/questions/edit/${data._id}` });
@@ -104,24 +119,27 @@ export default function QuestionDetail() {
                 {/* Vote */}
                 <ToggleVote
                   upvotes={data?.upvotes}
-                  questionId={data?._id}
+                  id={data?._id}
                   type={"question"}
+                  targetOwnerId={data?.author._id}
+                  questionId={data?._id}
                 />
 
-                {user && data?.author._id === user?._id && (
-                  <button
-                    onClick={handleEdit}
-                    className="text-sm text-blue-600 hover:underline"
-                  >
-                    Edit
-                  </button>
-                )}
+                <button
+                  onClick={handleEdit}
+                  className="text-sm text-blue-600 hover:underline"
+                >
+                  Edit
+                </button>
               </div>
 
               {/* Author info */}
               <div className="flex items-center gap-2 text-sm">
                 <img
-                  src={data?.author.avatar}
+                  src={
+                    data?.author.avatar ||
+                    "https://avatars.githubusercontent.com/u/000000?v=4"
+                  }
                   alt={data?.author.username}
                   className="w-8 h-8 rounded-full border object-cover"
                 />
@@ -133,8 +151,52 @@ export default function QuestionDetail() {
                 </div>
               </div>
             </div>
-            <CommentList parentId={data?._id} parentType="Question" />
-            <AnswerList questionId={data?._id} />
+
+            {user && data?.author._id === user._id && (
+              <ul className="space-y-2 mt-2">
+                {pendingEdits.map((edit) => (
+                  <li
+                    key={edit._id}
+                    className="p-2 border rounded bg-yellow-50 flex justify-between items-center"
+                  >
+                    <div>
+                      <p className="text-sm">
+                        <span className="font-medium">
+                          {edit.editor.username}
+                        </span>{" "}
+                        suggested an edit
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {new Date(edit.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() =>
+                          navigate({
+                            to: `/questions/edit-preview/${edit._id}`,
+                          })
+                        }
+                        size="sm"
+                      >
+                        View
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <CommentList
+              parentId={data?._id}
+              parentType="Question"
+              targetOwnerId={data?.author._id}
+              questionId={data?._id}
+            />
+            <AnswerList
+              questionId={data?._id}
+              questionOwnerId={data?.author._id}
+            />
           </div>
           <QuestionSidebar />
         </div>
@@ -143,7 +205,13 @@ export default function QuestionDetail() {
   );
 }
 
-export function ToggleVote({ upvotes = [], questionId, type }) {
+export function ToggleVote({
+  upvotes = [],
+  targetOwnerId,
+  id,
+  type,
+  questionId,
+}) {
   const { user } = useAuth();
   const { requireLogin, Dialog } = useRequireLogin();
 
@@ -165,13 +233,39 @@ export function ToggleVote({ upvotes = [], questionId, type }) {
     if (!requireLogin()) return;
     try {
       if (type === "question") {
-        const res = await _toggleUpvote({ questionId });
+        const res = await _toggleUpvote({ questionId: id });
         setCount(res.count);
         setVoted(res.upvoted);
+
+        if (res.upvoted) {
+          socket.emit("newLike", {
+            parentType: "Question",
+            parentId: id,
+            newLike: {
+              userId: user._id,
+              username: user.username,
+            },
+            targetOwnerId: targetOwnerId,
+            questionId,
+          });
+        }
       } else {
-        const res = await _toggleLike({ answerId: questionId });
+        const res = await _toggleLike({ answerId: id });
         setCount(res.likeCount);
         setVoted(res.liked);
+
+        if (res.liked) {
+          socket.emit("newLike", {
+            parentType: "Answer",
+            parentId: id,
+            newLike: {
+              userId: user._id,
+              username: user.username,
+            },
+            targetOwnerId: targetOwnerId,
+            questionId,
+          });
+        }
       }
     } catch (error) {
       console.log(error);

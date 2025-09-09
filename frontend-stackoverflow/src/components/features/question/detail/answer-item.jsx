@@ -7,7 +7,7 @@ import { _deleteAnswer, _updateAnswer } from "@/services/answer";
 import { toast } from "sonner";
 import RichTextEditor from "../ask/rich-text-editor";
 
-export default function AnswerItem({ data, fetchData }) {
+export default function AnswerItem({ data, fetchData, questionId }) {
   const { user } = useAuth();
   const { requireLogin, Dialog } = useRequireLogin();
 
@@ -66,8 +66,10 @@ export default function AnswerItem({ data, fetchData }) {
           {/* Vote */}
           <ToggleVote
             upvotes={data?.likes}
-            questionId={data?._id}
+            id={data?._id}
             type={"answer"}
+            targetOwnerId={data?.author._id}
+            questionId={questionId}
           />
           {/* Edit button */}
           {user && data?.author._id === user?._id && (
@@ -129,7 +131,12 @@ export default function AnswerItem({ data, fetchData }) {
           </div>
         </div>
       )}
-      <CommentList parentId={data?._id} parentType="Answer" />
+      <CommentList
+        parentId={data?._id}
+        parentType="Answer"
+        targetOwnerId={data?.author._id}
+        questionId={questionId}
+      />
       {Dialog}
     </div>
   );

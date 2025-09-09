@@ -1,9 +1,18 @@
-import { Search, Inbox, Bell, Award, HelpCircle, Menu } from "lucide-react";
+import { Search, Inbox } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import logo from "@/assets/logo-stackoverflow.svg";
 import { useAuth } from "@/contexts/auth";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover";
+import { useEffect, useState } from "react";
+
+import { _getNotificationByUserId, _markAsRead } from "@/services/notification";
+import { socket } from "@/lib/socket";
 
 export default function Header() {
   const { user } = useAuth();
@@ -29,14 +38,17 @@ export default function Header() {
           {/* Actions */}
           <div className="flex items-center gap-2">
             {user ? (
-              <Link to={"/account"}>
-                <Avatar className="size-8">
-                  <AvatarImage src={user?.avatar} className="object-cover" />
-                  <AvatarFallback>
-                    {user?.username ? user.username[0].toUpperCase() : "U"}
-                  </AvatarFallback>
-                </Avatar>
-              </Link>
+              <>
+                <NotificationDropdown user={user} />
+                <Link to={"/account"}>
+                  <Avatar className="size-8">
+                    <AvatarImage src={user?.avatar} className="object-cover" />
+                    <AvatarFallback>
+                      {user?.username ? user.username[0].toUpperCase() : "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                </Link>
+              </>
             ) : (
               <div className="flex items-center gap-2">
                 <Link href="/login">
@@ -55,5 +67,95 @@ export default function Header() {
         </div>
       </div>
     </header>
+  );
+}
+
+export function NotificationDropdown({ user }) {
+  const navigate = useNavigate();
+  const [notifications, setNotifications] = useState([]);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const res = await _getNotificationByUserId(user._id);
+      setNotifications(res);
+    };
+    fetchData();
+  }, [user]);
+
+  useEffect(() => {
+    socket.on("getNotification", (data) => {
+      setNotifications((prev) => [data, ...prev]);
+    });
+
+    return () => {
+      socket.off("getNotification");
+    };
+  }, []);
+
+  const handleMarkRead = async (id) => {
+    setNotifications((prev) =>
+      prev.map((n) => (n._id === id ? { ...n, isRead: true } : n))
+    );
+    await _markAsRead(id);
+  };
+
+  const handleClickNotification = async (n) => {
+    await handleMarkRead(n._id);
+
+    setOpen(false);
+    navigate({
+      to: "/questions/$id",
+      params: { id: n.postId },
+      replace: true,
+    });
+  };
+
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <div className="relative cursor-pointer">
+          <Inbox size={22} className="text-gray-700" />
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-white text-[10px] font-medium shadow">
+              {unreadCount}
+            </span>
+          )}
+        </div>
+      </PopoverTrigger>
+
+      <PopoverContent
+        align="end"
+        side="bottom"
+        sideOffset={8}
+        className="w-96 p-0"
+      >
+        <div className="px-4 py-2 text-sm font-semibold border-b">
+          Notifications
+        </div>
+
+        <div className="divide-y max-h-105 overflow-y-auto">
+          {notifications.map((n) => (
+            <div
+              key={n._id}
+              onClick={() => handleClickNotification(n)}
+              className={`flex flex-col items-start px-4 py-3 gap-1 cursor-pointer hover:bg-gray-50 ${
+                n.isRead ? "bg-white" : "bg-blue-50"
+              }`}
+            >
+              <p className="text-sm font-medium">{n.title || n.type}</p>
+              <p className="text-xs text-gray-600">
+                {n.description || n.content}
+              </p>
+              <span className="text-[11px] text-gray-400">
+                {new Date(n.createdAt).toLocaleString()}
+              </span>
+            </div>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
