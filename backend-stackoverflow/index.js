@@ -6,6 +6,7 @@ const cookieParser = require("cookie-parser");
 const dotenv = require("dotenv");
 const connectDB = require("./config/db");
 const errorHandler = require("./middlewares/errorHandler");
+const Badge = require("./models/Badge");
 // const passport = require('./config/passport');
 dotenv.config();
 
@@ -57,6 +58,38 @@ connectDB().then(async () => {
     } else {
       console.log("Admin account already exists");
     }
+
+    // ==== Seed badges mặc định ====
+    const badges = [
+      {
+        type: "bronze",
+        name: "Bronze Badge",
+        description: "Earned 50 points",
+        points: 50,
+      },
+      {
+        type: "silver",
+        name: "Silver Badge",
+        description: "Earned 100 points",
+        points: 100,
+      },
+      {
+        type: "gold",
+        name: "Gold Badge",
+        description: "Earned 200 points",
+        points: 200,
+      },
+    ];
+
+    for (const b of badges) {
+      const exists = await Badge.findOne({ type: b.type });
+      if (!exists) {
+        await Badge.create(b);
+        console.log(`Badge created: ${b.name}`);
+      } else {
+        console.log(`Badge already exists: ${b.name}`);
+      }
+    }
   } catch (err) {
     console.error("Error creating admin account:", err);
   }
@@ -74,6 +107,7 @@ app.use("/api/notifications", require("./routes/notification"));
 app.use("/api/tags", require("./routes/tag"));
 app.use("/api/leaderboard", require("./routes/leaderboard"));
 app.use("/api/questionEdits", require("./routes/questionEdit"));
+app.use("/api/stats", require("./routes/stat"));
 app.use("/api/upload", require("./routes/upload"));
 
 // ==== Health check ====

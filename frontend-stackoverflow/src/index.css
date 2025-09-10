@@ -284,3 +284,7 @@ button:focus-visible {
   max-height: 550px;
   overflow: auto;
 }
+
+#stats-container {
+  background-color: #f5f5f5;
+}

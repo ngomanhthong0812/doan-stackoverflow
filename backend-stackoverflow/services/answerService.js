@@ -1,75 +1,82 @@
-const Answer = require('../models/Answer');
-const commentService = require('./commentService');
-const User = require('../models/User');
+const Answer = require("../models/Answer");
+const commentService = require("./commentService");
+const User = require("../models/User");
+const { checkAndAwardBadges } = require("../utils/checkAndAwarBadger");
 
 exports.createAnswer = async ({ content, question, author }) => {
-    const answer = await Answer.create({ content, question, author });
-    await User.findByIdAndUpdate(author, { $inc: { reputation: 10 } });
-    const populated = await answer.populate("author", "username reputation");
-    return populated;
+  const answer = await Answer.create({ content, question, author });
+  await User.findByIdAndUpdate(author, { $inc: { reputation: 10 } });
+  const populated = await answer.populate("author", "username reputation");
+  return populated;
 };
 
 exports.getAnswersByQuestion = async (questionId) => {
-    return await Answer.find({ question: questionId })
-        .populate('author', 'username avatar reputation')
-        .sort({ createdAt: -1 });
+  return await Answer.find({ question: questionId })
+    .populate("author", "username avatar reputation")
+    .sort({ createdAt: -1 });
 };
 
 exports.deleteAnswerById = async (answerId) => {
-    const answer = await Answer.findById(answerId);
-    if (!answer) return null;
+  const answer = await Answer.findById(answerId);
+  if (!answer) return null;
 
-    await commentService.deleteCommentsByAnswer(answerId);
-    await Answer.findByIdAndDelete(answerId);
+  await commentService.deleteCommentsByAnswer(answerId);
+  await Answer.findByIdAndDelete(answerId);
 
-    return answer;
+  return answer;
 };
 
 exports.toggleLike = async (answerId, userId) => {
-    const answer = await Answer.findById(answerId);
-    if (!answer) throw new Error('Answer not found');
+  const answer = await Answer.findById(answerId);
+  if (!answer) throw new Error("Answer not found");
 
-    const likeIndex = answer.likes.findIndex(like => like.user.toString() === userId.toString());
-    let liked;
-    if (likeIndex === -1) {
-        // Chưa like -> thêm like
-        answer.likes.push({ user: userId });
-        liked = true;
-        await User.findByIdAndUpdate(answer.author, { $inc: { reputation: 2 } });
-    } else {
-        // Đã like -> bỏ like
-        answer.likes.splice(likeIndex, 1);
-        liked = false;
-        await User.findByIdAndUpdate(answer.author, { $inc: { reputation: -2 } });
-    }
-    await answer.save();
-    return { liked, likeCount: answer.likes.length };
+  const likeIndex = answer.likes.findIndex(
+    (like) => like.user.toString() === userId.toString()
+  );
+  let liked;
+  if (likeIndex === -1) {
+    // Chưa like -> thêm like
+    answer.likes.push({ user: userId });
+    liked = true;
+    await User.findByIdAndUpdate(answer.author, { $inc: { reputation: 3 } });
+    await checkAndAwardBadges(answer.author);
+  } else {
+    // Đã like -> bỏ like
+    answer.likes.splice(likeIndex, 1);
+    liked = false;
+    await User.findByIdAndUpdate(answer.author, { $inc: { reputation: -3 } });
+    await checkAndAwardBadges(answer.author);
+  }
+  await answer.save();
+  return { liked, likeCount: answer.likes.length };
 };
 
 exports.getLikeHistory = async (answerId) => {
-    const answer = await Answer.findById(answerId).populate('likes.user', 'username avatar');
-    if (!answer) throw new Error('Answer not found');
-    return answer.likes;
+  const answer = await Answer.findById(answerId).populate(
+    "likes.user",
+    "username avatar"
+  );
+  if (!answer) throw new Error("Answer not found");
+  return answer.likes;
 };
 
 exports.updateAnswer = async (answerId, content, userId) => {
-    const answer = await Answer.findById(answerId);
-    if (!answer) throw new Error('NOT_FOUND');
+  const answer = await Answer.findById(answerId);
+  if (!answer) throw new Error("NOT_FOUND");
 
-    if (answer.author.toString() !== userId.toString()) {
-        throw new Error('FORBIDDEN');
-    }
+  if (answer.author.toString() !== userId.toString()) {
+    throw new Error("FORBIDDEN");
+  }
 
-    answer.content = content;
-    await answer.save();
+  answer.content = content;
+  await answer.save();
 
-    return answer;
+  return answer;
 };
 
 exports.getAllAnswers = async () => {
-    return await Answer.find()
-        .populate('author', 'username avatar reputation')
-        .populate('question', 'title')
-        .sort({ createdAt: -1 });
+  return await Answer.find()
+    .populate("author", "username avatar reputation")
+    .populate("question", "title")
+    .sort({ createdAt: -1 });
 };
-

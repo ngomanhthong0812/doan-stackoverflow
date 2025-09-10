@@ -10,10 +10,17 @@ import {
 import { Button } from "@/components/ui/button";
 import { Play, RotateCcw } from "lucide-react";
 
-export default function CodeRunnerModal({ open, setOpen }) {
-  const [html, setHtml] = useState("<h1>Hello World</h1>");
-  const [css, setCss] = useState("h1 { color: red; }");
-  const [js, setJs] = useState("console.log('JS chạy')");
+export default function CodeRunnerModal({
+  open,
+  setOpen,
+  html,
+  setHtml,
+  css,
+  setCss,
+  js,
+  setJs,
+  handleInsertCode,
+}) {
   const [srcDoc, setSrcDoc] = useState("");
 
   const runCode = () => {
@@ -74,6 +81,12 @@ export default function CodeRunnerModal({ open, setOpen }) {
           >
             <Play />
             Run
+          </Button>
+          <Button
+            onClick={handleInsertCode}
+            className="bg-[#1b75d0] w-fit hover:!bg-[#155ca2] text-white"
+          >
+            Save & insert into post
           </Button>
           <Button
             onClick={resetCode}

@@ -21,15 +21,34 @@ function RootComponent() {
   const isNoLayoutPage = noLayoutPages.includes(location.pathname);
 
   // Trang private cần login
-  const privatePages = ["/account", "/questions/ask"];
-  const isPrivatePage = privatePages.includes(location.pathname);
+  const privatePagesPatterns = [
+    /^\/account$/,
+    /^\/questions\/ask$/,
+    /^\/$/,
+    /^\/questions\/edit(\/.*)?$/,
+    /^\/questions\/edit-preview$/,
+  ];
+
+  const isPrivatePage = privatePagesPatterns.some((pattern) =>
+    pattern.test(location.pathname)
+  );
+
+  // Trang chỉ admin mới vào được
+  const adminPagesPatterns = [/^\/stats$/];
+  const isAdminPage = adminPagesPatterns.some((pattern) =>
+    pattern.test(location.pathname)
+  );
 
   // Chặn truy cập trang private nếu chưa login
   useEffect(() => {
     if (!loading && !user && isPrivatePage) {
       navigate({ to: "/login" });
     }
-  }, [loading, user, isPrivatePage, navigate]);
+
+    if (isAdminPage && user?.role !== "admin") {
+      navigate({ to: "/questions" });
+    }
+  }, [loading, user, isPrivatePage, navigate, isAdminPage]);
 
   if (loading) {
     return (

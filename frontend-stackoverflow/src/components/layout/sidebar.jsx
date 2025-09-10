@@ -1,23 +1,37 @@
-import { Home, MessageSquare, Tag, Users } from "lucide-react";
+import {
+  ChartCandlestick,
+  Home,
+  MessageSquare,
+  Tag,
+  Users,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Link, useMatchRoute } from "@tanstack/react-router";
-
-const menu = [
-  { icon: Home, label: "Home", to: "/" },
-  { icon: MessageSquare, label: "Questions", to: "/questions" },
-  { icon: Tag, label: "Tags", to: "/tags" },
-  { icon: Users, label: "Users", to: "/users" },
-];
+import { useAuth } from "@/contexts/auth";
 
 export default function Sidebar() {
+  const { user } = useAuth();
   const matchRoute = useMatchRoute();
+
+  // menu cơ bản
+  const menu = [
+    { icon: Home, label: "Home", to: "/" },
+    { icon: MessageSquare, label: "Questions", to: "/questions" },
+    { icon: Tag, label: "Tags", to: "/tags" },
+    { icon: ChartCandlestick, label: "Stats", to: "/stats", adminOnly: true }, // adminOnly
+  ];
+
+  // lọc menu nếu user không phải admin
+  const filteredMenu = menu.filter(
+    (item) => !item.adminOnly || (user && user.role === "admin")
+  );
 
   return (
     <aside className="w-45 border-r bg-white pr-2 py-2">
       <div className="sticky top-[60px] flex flex-col gap-4">
         {/* Menu chính */}
         <nav className="flex flex-col gap-1">
-          {menu.map(({ icon: Icon, label, to, badge }) => {
+          {filteredMenu.map(({ icon: Icon, label, to, badge }) => {
             const isActive = !!matchRoute({ to, fuzzy: false });
 
             return (

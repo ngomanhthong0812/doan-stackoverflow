@@ -1,11 +1,15 @@
+import { Link } from "@tanstack/react-router";
+
 export default function TagItem({ tag }) {
   return (
     <div className="border rounded-sm p-3 duration-200 bg-white flex flex-col justify-between">
       <div>
         {/* Tag title */}
-        <h1 className="!text-xs font-bold text-gray-800 bg-black/10 w-fit px-1 rounded-xs mb-3">
-          {tag.name}
-        </h1>
+        <Link to={`/search?key=${tag.name}`}>
+          <h1 className="!text-xs font-bold text-gray-800 bg-black/10 w-fit px-1 rounded-xs mb-3">
+            {tag.name}
+          </h1>
+        </Link>
 
         {/* Description */}
         <p className="text-gray-600 text-[13px] line-clamp-4">

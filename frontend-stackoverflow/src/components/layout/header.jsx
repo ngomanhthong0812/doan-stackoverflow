@@ -22,19 +22,14 @@ export default function Header() {
       <div className="mx-auto flex h-12 container items-center gap-4 justify-between">
         <div className="flex items-center">
           {/* Logo */}
-          <Link href="/" className="block px-3">
+          <Link href="/questions" className="block px-3">
             <img src={logo} alt="Logo" className="h-7 w-auto" />
           </Link>
         </div>
 
         <div className="flex items-center gap-4">
           {/* Search */}
-          <div className="min-w-md">
-            <div className="relative">
-              <Search className="absolute left-2 top-1/2 size-4 -translate-y-1/2 text-gray-500" />
-              <Input placeholder="Search..." className="w-full pl-8" />
-            </div>
-          </div>
+          <SearchBox />
           {/* Actions */}
           <div className="flex items-center gap-2">
             {user ? (
@@ -157,5 +152,33 @@ export function NotificationDropdown({ user }) {
         </div>
       </PopoverContent>
     </Popover>
+  );
+}
+
+export function SearchBox() {
+  const navigate = useNavigate();
+  const [query, setQuery] = useState("");
+
+  const handleSearch = () => {
+    if (!query.trim()) return;
+    navigate({ to: "/search", search: { key: query.trim() } });
+  };
+
+  return (
+    <div className="min-w-md">
+      <div className="relative">
+        <Search
+          onClick={handleSearch}
+          className="absolute left-2 top-1/2 size-4 -translate-y-1/2 text-gray-500 cursor-pointer"
+        />
+        <Input
+          placeholder="Search..."
+          className="w-full pl-8"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+        />
+      </div>
+    </div>
   );
 }

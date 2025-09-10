@@ -1,12 +1,30 @@
 import axios from "@/config/axios";
 
-export const _getQuestions = async ({ page, perPage, noAnswers, sortedBy }) => {
+export const _getQuestions = async ({
+  page,
+  perPage,
+  noAnswers,
+  sortedBy,
+  search,
+}) => {
   const response = await axios.get("/questions", {
     params: {
       page,
       perPage,
       noAnswers,
       sortedBy,
+      search,
+    },
+  });
+  return response.data;
+};
+
+export const _getQuestionsByTabs = async ({ page, perPage, selectedTags }) => {
+  const response = await axios.get("/questions/by-tabs", {
+    params: {
+      page,
+      perPage,
+      selectedTags: JSON.stringify(selectedTags),
     },
   });
   return response.data;
@@ -42,9 +60,14 @@ export const _toggleUpvote = async ({ questionId }) => {
 };
 
 export const _getPendingEdits = async (id) => {
-  const response = await axios.get(`/questionEdits/${id}`, {
+  const response = await axios.get(`/questionEdits/${id}/status`, {
     params: { status: "pending" },
   });
+  return response.data;
+};
+
+export const _getEdits = async (id) => {
+  const response = await axios.get(`/questionEdits/${id}/status`);
   return response.data;
 };
 

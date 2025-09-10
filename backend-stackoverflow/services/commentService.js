@@ -1,5 +1,6 @@
 const Comment = require("../models/Comment");
 const User = require("../models/User");
+const { checkAndAwardBadges } = require("../utils/checkAndAwarBadger");
 
 exports.toggleLike = async (commentId, userId) => {
   const comment = await Comment.findById(commentId);
@@ -14,11 +15,13 @@ exports.toggleLike = async (commentId, userId) => {
   if (likeIndex === -1) {
     comment.likes.push({ user: userId });
     liked = true;
-    await User.findByIdAndUpdate(comment.author, { $inc: { reputation: 2 } });
+    await User.findByIdAndUpdate(comment.author, { $inc: { reputation: 3 } });
+    await checkAndAwardBadges(comment.author);
   } else {
     comment.likes.splice(likeIndex, 1);
     liked = false;
-    await User.findByIdAndUpdate(comment.author, { $inc: { reputation: -2 } });
+    await User.findByIdAndUpdate(comment.author, { $inc: { reputation: -3 } });
+    await checkAndAwardBadges(comment.author);
   }
   await comment.save();
   return { liked, likeCount: comment.likes.length };

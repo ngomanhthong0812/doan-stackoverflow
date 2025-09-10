@@ -140,7 +140,7 @@ function NextButton({ disabled, onClick, label = "Next" }) {
   );
 }
 
-export function TagsInput({ tags, setTags }) {
+export function TagsInput({ tags, setTags, isdes = true }) {
   const [inputValue, setInputValue] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const [tagsData, setTagsData] = useState([]);
@@ -176,10 +176,12 @@ export function TagsInput({ tags, setTags }) {
   return (
     <div>
       <label className="block text-sm font-semibold mb-1">Tags</label>
-      <p className="text-xs text-gray-500 mb-2">
-        Add up to 5 tags to describe what your question is about. Start typing
-        to see suggestions.
-      </p>
+      {isdes && (
+        <p className="text-xs text-gray-500 mb-2">
+          Add up to 5 tags to describe what your question is about. Start typing
+          to see suggestions.
+        </p>
+      )}
 
       {/* Ô input */}
       <div className="border rounded-lg p-2 flex flex-wrap gap-2 focus-within:ring-2 focus-within:ring-blue-500">

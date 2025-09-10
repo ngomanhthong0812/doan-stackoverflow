@@ -41,7 +41,7 @@ export default function QuestionDetail() {
   }, [id]);
 
   useEffect(() => {
-    if (!data?.author._id === user._id) return;
+    if (!data?.author._id === user?._id) return;
     const fetchPendingEdits = async () => {
       try {
         const edits = await _getPendingEdits(id);
@@ -51,10 +51,16 @@ export default function QuestionDetail() {
       }
     };
 
-    fetchPendingEdits();
+    if (user) {
+      fetchPendingEdits();
+    }
   }, [id, user, data]);
 
-  const handleEdit = () => {
+  const handleEdit = (e) => {
+    if (!requireLogin()) {
+      e.preventDefault();
+      return;
+    }
     navigate({ to: `/questions/edit/${data._id}` });
   };
   const handleAdd = (e) => {
@@ -154,7 +160,7 @@ export default function QuestionDetail() {
 
             {user && data?.author._id === user._id && (
               <ul className="space-y-2 mt-2">
-                {pendingEdits.map((edit) => (
+                {pendingEdits?.map((edit) => (
                   <li
                     key={edit._id}
                     className="p-2 border rounded bg-yellow-50 flex justify-between items-center"
@@ -242,8 +248,8 @@ export function ToggleVote({
             parentType: "Question",
             parentId: id,
             newLike: {
-              userId: user._id,
-              username: user.username,
+              userId: user?._id,
+              username: user?.username,
             },
             targetOwnerId: targetOwnerId,
             questionId,
@@ -259,8 +265,8 @@ export function ToggleVote({
             parentType: "Answer",
             parentId: id,
             newLike: {
-              userId: user._id,
-              username: user.username,
+              userId: user?._id,
+              username: user?.username,
             },
             targetOwnerId: targetOwnerId,
             questionId,

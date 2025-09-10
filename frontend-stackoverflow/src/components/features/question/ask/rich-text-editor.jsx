@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { Quill } from "react-quill-new";
 import ReactQuill from "react-quill-new";
 import "react-quill-new/dist/quill.snow.css";
@@ -16,6 +16,10 @@ class="lucide lucide-play-icon lucide-play">
 `;
 
 export default function RichTextEditor({ value, onChange }) {
+  const quillRef = useRef(null);
+  const [html, setHtml] = useState("<h1>Hello World</h1>");
+  const [css, setCss] = useState("h1 { color: red; }");
+  const [js, setJs] = useState("console.log('JS chạy')");
   const [openRunCode, setOpenRunCode] = useState(false);
 
   const modules = useMemo(
@@ -31,11 +35,9 @@ export default function RichTextEditor({ value, onChange }) {
           ["custom"],
         ],
         handlers: {
-          // custom nút Run Code
           custom() {
             setOpenRunCode(true);
           },
-          // custom upload ảnh
           image() {
             const input = document.createElement("input");
             input.setAttribute("type", "file");
@@ -48,16 +50,13 @@ export default function RichTextEditor({ value, onChange }) {
 
               try {
                 const res = await _upload(file);
-
                 if (res?.url) {
-                  const quill = this.quill;
-                  const range = quill.getSelection();
+                  const quill = quillRef.current.getEditor();
+                  const range = quill.getSelection(true);
                   quill.insertEmbed(range.index, "image", res.url);
-                } else {
-                  console.error("Upload failed");
                 }
               } catch (err) {
-                console.error("Upload image failed:", err);
+                console.error(err);
               }
             };
           },
@@ -67,16 +66,49 @@ export default function RichTextEditor({ value, onChange }) {
     []
   );
 
+  const handleInsertCode = () => {
+    const quill = quillRef.current.getEditor();
+    if (!quill) return;
+
+    const range = quill.getSelection(true) || { index: quill.getLength() };
+
+    const content = `
+<p><strong>HTML:</strong></p>
+<pre><code class="language-html">${html}</code></pre>
+
+<p><strong>CSS:</strong></p>
+<pre><code class="language-css">${css}</code></pre>
+
+<p><strong>JS:</strong></p>
+<pre><code class="language-js">${js}</code></pre>
+`;
+
+    quill.clipboard.dangerouslyPasteHTML(range.index, content);
+    setOpenRunCode(false);
+  };
+
   return (
     <div className="border rounded-sm overflow-hidden">
       <ReactQuill
+        ref={quillRef}
         theme="snow"
         value={value}
         onChange={onChange}
         modules={modules}
         className="[&_.ql-editor]:min-h-[300px] [&_.ql-editor]:text-sm"
       />
-      <CodeRunnerModal open={openRunCode} setOpen={setOpenRunCode} />
+
+      <CodeRunnerModal
+        open={openRunCode}
+        setOpen={setOpenRunCode}
+        html={html}
+        setHtml={setHtml}
+        js={js}
+        setJs={setJs}
+        css={css}
+        setCss={setCss}
+        handleInsertCode={handleInsertCode}
+      />
     </div>
   );
 }

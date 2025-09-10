@@ -36,7 +36,7 @@ export default function QuestionItem({
       {/* Middle */}
       <div className="w-full">
         <Link
-          to={_id}
+          to={`/questions/${_id}`}
           className="text-[17px] line-clamp-2 leading-snug text-[#1b75d0] hover:text-[#155ca2] focus:outline-none focus:ring-2 focus:ring-blue-400 rounded dark:text-blue-400 dark:hover:text-blue-300"
           aria-label={title}
         >

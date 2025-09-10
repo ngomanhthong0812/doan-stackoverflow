@@ -14,6 +14,8 @@ import { Route as authRegisterRouteImport } from './routes/(auth)/register'
 import { Route as authLoginRouteImport } from './routes/(auth)/login'
 import { Route as appUsersRouteImport } from './routes/(app)/users'
 import { Route as appTagsRouteImport } from './routes/(app)/tags'
+import { Route as appStatsRouteImport } from './routes/(app)/stats'
+import { Route as appSearchRouteImport } from './routes/(app)/search'
 import { Route as appAccountRouteImport } from './routes/(app)/account'
 import { Route as appQuestionsIndexRouteImport } from './routes/(app)/questions/index'
 import { Route as appQuestionsAskRouteImport } from './routes/(app)/questions/ask'
@@ -44,6 +46,16 @@ const appUsersRoute = appUsersRouteImport.update({
 const appTagsRoute = appTagsRouteImport.update({
   id: '/(app)/tags',
   path: '/tags',
+  getParentRoute: () => rootRouteImport,
+})
+const appStatsRoute = appStatsRouteImport.update({
+  id: '/(app)/stats',
+  path: '/stats',
+  getParentRoute: () => rootRouteImport,
+})
+const appSearchRoute = appSearchRouteImport.update({
+  id: '/(app)/search',
+  path: '/search',
   getParentRoute: () => rootRouteImport,
 })
 const appAccountRoute = appAccountRouteImport.update({
@@ -80,6 +92,8 @@ const appQuestionsEditPreviewIdRoute =
 
 const rootRouteChildren = {
   appAccountRoute: appAccountRoute,
+  appSearchRoute: appSearchRoute,
+  appStatsRoute: appStatsRoute,
   appTagsRoute: appTagsRoute,
   appUsersRoute: appUsersRoute,
   authLoginRoute: authLoginRoute,

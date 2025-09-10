@@ -22,6 +22,7 @@ exports.getAllQuestions = async (req, res, next) => {
       perPage = 15,
       sortedBy = "newest",
       noAnswers = "false",
+      search,
     } = req.query;
 
     page = Number(page);
@@ -33,7 +34,38 @@ exports.getAllQuestions = async (req, res, next) => {
       perPage,
       sortedBy,
       noAnswers,
+      search,
     });
+    res.json(questions);
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.getQuestionsByTabs = async (req, res, next) => {
+  try {
+    let { page = 1, perPage = 15, selectedTags } = req.query;
+
+    if (selectedTags) {
+      try {
+        selectedTags = JSON.parse(selectedTags);
+      } catch (err) {
+        console.log(err);
+
+        selectedTags = [];
+      }
+    } else {
+      selectedTags = [];
+    }
+
+    page = Number(page);
+    perPage = Number(perPage);
+    const questions = await questionService.getQuestionsByTabs({
+      page,
+      perPage,
+      selectedTags,
+    });
+
     res.json(questions);
   } catch (err) {
     next(err);
@@ -43,7 +75,6 @@ exports.getAllQuestions = async (req, res, next) => {
 exports.toggleUpvote = async (req, res, next) => {
   try {
     const { questionId } = req.params;
-    console.log(req.user._id);
     const result = await questionService.toggleUpvote(questionId, req.user._id);
     res.json(result);
   } catch (err) {
@@ -116,9 +147,9 @@ exports.getQuestionsByUser = async (req, res, next) => {
   }
 };
 
-exports.getQuestionsById = async (req, res, next) => {
+exports.getQuestionById = async (req, res, next) => {
   try {
-    const questions = await questionService.getQuestionsById(req.params.id);
+    const questions = await questionService.getQuestionById(req.params.id);
     await questionService.incrementViews(questions._id);
 
     res.json(questions);

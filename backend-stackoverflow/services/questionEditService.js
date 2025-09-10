@@ -11,6 +11,7 @@ exports.getPendingEdits = async (questionId, status = null) => {
 
   return await QuestionEdit.find(query)
     .populate("editor", "username avatar")
+    .populate("proposedTags", "name description")
     .sort({ createdAt: -1 });
 };
 

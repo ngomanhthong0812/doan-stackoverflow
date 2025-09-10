@@ -5,6 +5,7 @@ const authMiddleware = require('../middlewares/authMiddleware');
 const upload = require('../middlewares/upload');
 
 router.get('/', questionController.getAllQuestions);
+router.get("/by-tabs", questionController.getQuestionsByTabs);
 
 // router.post('/', authMiddleware, questionController.createQuestion);
 router.post('/', authMiddleware, upload.array('images', 3), questionController.createQuestion);
@@ -19,6 +20,6 @@ router.get('/search', questionController.searchQuestions);
 
 router.get('/users/:id/questions', authMiddleware, questionController.getQuestionsByUser);
 
-router.get("/:id", questionController.getQuestionsById);
+router.get("/:id", questionController.getQuestionById);
 
 module.exports = router;

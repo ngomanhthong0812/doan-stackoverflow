@@ -1,8 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Popover,
   PopoverContent,
@@ -12,30 +9,6 @@ import QuestionItem from "./question-item";
 import { _getQuestions } from "@/services/question";
 import Pagination from "../pagination";
 import RenderSkeleton from "../render-skeleton";
-
-// Tabs
-function Tabs({ active, setActive }) {
-  const tabs = ["Newest", "Active", "Unanswered"];
-  return (
-    <div className="flex items-center gap-1 rounded-md border px-2 py-1 text-sm">
-      {tabs.map((tab) => (
-        <Button
-          key={tab}
-          variant="ghost"
-          size="sm"
-          onClick={() => setActive(tab)}
-          className={
-            active === tab
-              ? "font-semibold text-black bg-gray-100"
-              : "text-gray-600"
-          }
-        >
-          {tab}
-        </Button>
-      ))}
-    </div>
-  );
-}
 
 // Filter Panel
 function FilterBy({ filter, updateFilter, onApply, onClear }) {
@@ -111,7 +84,7 @@ function FilterBy({ filter, updateFilter, onApply, onClear }) {
   );
 }
 
-export default function QuestionFilter() {
+export default function QuestionFilter({ search }) {
   const [questions, setQuestions] = useState([]);
   const [filter, setFilter] = useState({
     noAnswers: false,
@@ -133,6 +106,7 @@ export default function QuestionFilter() {
           perPage,
           noAnswers: appliedFilter.noAnswers,
           sortedBy: appliedFilter.sortedBy,
+          search,
         });
         setQuestions(res.data);
         setPagination(res.pagination);
@@ -143,7 +117,7 @@ export default function QuestionFilter() {
       }
     };
     fetchQues();
-  }, [page, perPage, appliedFilter]);
+  }, [page, perPage, appliedFilter, search]);
 
   useEffect(() => {
     setPage(1);
@@ -180,7 +154,7 @@ export default function QuestionFilter() {
           {/* Tabs + Filter */}
           <div className="flex items-center gap-2">
             {/* Filter Popover */}
-            <Popover a>
+            <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
