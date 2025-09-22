@@ -6,8 +6,7 @@ const cookieParser = require("cookie-parser");
 const dotenv = require("dotenv");
 const connectDB = require("./config/db");
 const errorHandler = require("./middlewares/errorHandler");
-const Badge = require("./models/Badge");
-// const passport = require('./config/passport');
+const seedData = require("./seed");
 dotenv.config();
 
 // ==== Khởi tạo Express & Socket.IO ====
@@ -38,61 +37,7 @@ app.use(express.urlencoded({ extended: true }));
 // ==== Kết nối DB ====
 connectDB().then(async () => {
   console.log("✅ MongoDB connected");
-
-  // ==== Tạo admin mặc định nếu chưa có ====
-  const User = require("./models/User");
-  const bcrypt = require("bcrypt");
-
-  try {
-    const existingAdmin = await User.findOne({ role: "admin" });
-    if (!existingAdmin) {
-      const hashedPassword = await bcrypt.hash("admin123", 10);
-      const admin = new User({
-        username: "admin",
-        email: "admin@example.com",
-        password: hashedPassword,
-        role: "admin",
-      });
-      await admin.save();
-      console.log("Admin account created: admin@example.com / admin123");
-    } else {
-      console.log("Admin account already exists");
-    }
-
-    // ==== Seed badges mặc định ====
-    const badges = [
-      {
-        type: "bronze",
-        name: "Bronze Badge",
-        description: "Earned 50 points",
-        points: 50,
-      },
-      {
-        type: "silver",
-        name: "Silver Badge",
-        description: "Earned 100 points",
-        points: 100,
-      },
-      {
-        type: "gold",
-        name: "Gold Badge",
-        description: "Earned 200 points",
-        points: 200,
-      },
-    ];
-
-    for (const b of badges) {
-      const exists = await Badge.findOne({ type: b.type });
-      if (!exists) {
-        await Badge.create(b);
-        console.log(`Badge created: ${b.name}`);
-      } else {
-        console.log(`Badge already exists: ${b.name}`);
-      }
-    }
-  } catch (err) {
-    console.error("Error creating admin account:", err);
-  }
+  await seedData();
 });
 
 // ==== Routes API ====

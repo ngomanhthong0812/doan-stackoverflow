@@ -117,6 +117,7 @@ export default function Home() {
               totalPages={pagination.totalPages}
               onPageChange={setPage}
               onPerPageChange={setPerPage}
+              perPage={perPage}
             />
           )}
         </div>

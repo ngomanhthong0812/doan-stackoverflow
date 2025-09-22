@@ -116,6 +116,7 @@ export default function TagFilter() {
           totalPages={pagination?.totalPages}
           onPageChange={setPage}
           onPerPageChange={setPerPage}
+          perPage={perPage}
         />
       )}
     </div>

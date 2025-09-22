@@ -207,6 +207,7 @@ export default function QuestionFilter({ search }) {
           totalPages={pagination?.totalPages}
           onPageChange={setPage}
           onPerPageChange={setPerPage}
+          perPage={perPage}
         />
       )}
     </>
