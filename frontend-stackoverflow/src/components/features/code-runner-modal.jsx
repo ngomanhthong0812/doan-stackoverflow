@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Editor from "@monaco-editor/react";
 import {
   Dialog,
@@ -22,6 +22,7 @@ export default function CodeRunnerModal({
   handleInsertCode,
 }) {
   const [srcDoc, setSrcDoc] = useState("");
+  const [logs, setLogs] = useState([]);
 
   const runCode = () => {
     const source = `
@@ -31,10 +32,24 @@ export default function CodeRunnerModal({
         </head>
         <body>
           ${html}
-          <script>${js}</script>
+          <script>
+            // Gửi log ra parent
+            (function() {
+              const oldLog = console.log;
+              console.log = function(...args) {
+                oldLog.apply(this, args);
+                window.parent.postMessage(
+                  { type: "iframe-log", args },
+                  "*"
+                );
+              };
+            })();
+            ${js}
+          </script>
         </body>
       </html>
     `;
+    setLogs([]); // clear log mỗi lần run
     setSrcDoc(source);
   };
 
@@ -43,43 +58,76 @@ export default function CodeRunnerModal({
     setCss("");
     setJs("");
     setSrcDoc("");
+    setLogs([]);
   };
+
+  // Lắng nghe log từ iframe
+  useEffect(() => {
+    const handler = (event) => {
+      if (event.data.type === "iframe-log") {
+        setLogs((prev) => [...prev, event.data.args.join(" ")]);
+      }
+    };
+    window.addEventListener("message", handler);
+    return () => window.removeEventListener("message", handler);
+  }, []);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild></DialogTrigger>
       <DialogContent className="min-w-7xl h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>HTML / CSS / JS</DialogTitle>
+          <DialogTitle className="text-xl font-semibold">
+            HTML / CSS / JS
+          </DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-3 gap-2 flex-1">
-          <Editor
-            height="100%"
-            defaultLanguage="html"
-            value={html}
-            onChange={(v) => setHtml(v ?? "")}
-          />
-          <Editor
-            height="100%"
-            defaultLanguage="css"
-            value={css}
-            onChange={(v) => setCss(v ?? "")}
-          />
-          <Editor
-            height="100%"
-            defaultLanguage="javascript"
-            value={js}
-            onChange={(v) => setJs(v ?? "")}
-          />
+        {/* Code editors */}
+        <div className="grid grid-cols-3 gap-3 flex-1">
+          <div className="flex flex-col border overflow-hidden">
+            <div className="bg-gray-100 px-3 py-1 text-sm font-medium border-b">
+              HTML
+            </div>
+            <Editor
+              height="100%"
+              defaultLanguage="html"
+              value={html}
+              onChange={(v) => setHtml(v ?? "")}
+            />
+          </div>
+
+          <div className="flex flex-col border overflow-hidden">
+            <div className="bg-gray-100 px-3 py-1 text-sm font-medium border-b">
+              CSS
+            </div>
+            <Editor
+              height="100%"
+              defaultLanguage="css"
+              value={css}
+              onChange={(v) => setCss(v ?? "")}
+            />
+          </div>
+
+          <div className="flex flex-col border overflow-hidden">
+            <div className="bg-gray-100 px-3 py-1 text-sm font-medium border-b">
+              JavaScript
+            </div>
+            <Editor
+              height="100%"
+              defaultLanguage="javascript"
+              value={js}
+              onChange={(v) => setJs(v ?? "")}
+            />
+          </div>
         </div>
 
-        <div className="flex gap-2 mt-2">
+        {/* Actions */}
+        <div className="flex gap-3 mt-3">
           <Button
             onClick={runCode}
-            className="bg-[#1b75d0] w-fit hover:!bg-[#155ca2] text-white"
+            className="bg-[#1b75d0] w-fit hover:!bg-[#155ca2] text-white flex items-center gap-2"
           >
-            <Play />
+            <Play size={16} />
             Run
           </Button>
           <Button
@@ -91,14 +139,18 @@ export default function CodeRunnerModal({
           <Button
             onClick={resetCode}
             variant="outline"
-            className="flex items-center gap-1"
+            className="flex items-center gap-2"
           >
             <RotateCcw size={16} />
             Reset
           </Button>
         </div>
 
-        <div className="flex-1 mt-2 border rounded bg-white overflow-hidden">
+        {/* Result Preview */}
+        <div className="flex-1 mt-3 flex flex-col border overflow-hidden">
+          <div className="bg-gray-100 px-3 py-1 text-sm font-medium border-b">
+            Result Preview
+          </div>
           <iframe
             srcDoc={srcDoc}
             title="preview"
@@ -107,6 +159,16 @@ export default function CodeRunnerModal({
             width="100%"
             height="100%"
           />
+        </div>
+
+        {/* Console Logs */}
+        <div className="mt-3 border bg-black text-white p-2 h-32 overflow-auto text-sm">
+          <div className="text-gray-400 mb-1">Console</div>
+          {logs.length === 0 ? (
+            <div className="text-gray-500">No logs yet...</div>
+          ) : (
+            logs.map((log, i) => <div key={i}>{log}</div>)
+          )}
         </div>
       </DialogContent>
     </Dialog>
