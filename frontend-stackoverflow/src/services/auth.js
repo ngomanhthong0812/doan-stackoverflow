@@ -23,3 +23,20 @@ export const _getAccount = async () => {
   const response = await axios.get("/auth/get-account");
   return response.data;
 };
+
+export const _forgotPassword = async (email) => {
+  const response = await axios.post("/auth/forgot-password", { email });
+  return response.data;
+};
+
+export const _resetPassword = async (token, password) => {
+  const response = await axios.post(`/auth/reset-password/${token}`, {
+    password,
+  });
+  return response.data;
+};
+
+export const _refreshToken = async () => {
+  const response = await axios.post(`/auth/refresh-token`);
+  return response.data;
+};

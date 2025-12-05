@@ -1,7 +1,9 @@
 import {
   ChartCandlestick,
+  Code,
   Home,
   MessageSquare,
+  Share,
   Tag,
   Users,
 } from "lucide-react";
@@ -18,6 +20,8 @@ export default function Sidebar() {
     { icon: Home, label: "Home", to: "/" },
     { icon: MessageSquare, label: "Questions", to: "/questions" },
     { icon: Tag, label: "Tags", to: "/tags" },
+    { icon: Share, label: "Shared Files", to: "/shared-files" },
+    { icon: Code, label: "Frontend lag", to: "/frontend-lag" },
     { icon: ChartCandlestick, label: "Stats", to: "/stats", adminOnly: true }, // adminOnly
   ];
 

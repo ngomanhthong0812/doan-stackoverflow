@@ -1,5 +1,13 @@
 import { socket } from "@/lib/socket";
-import { _getAccount, _login, _logout, _register } from "@/services/auth";
+import {
+  _getAccount,
+  _login,
+  _logout,
+  _register,
+  _forgotPassword,
+  _resetPassword,
+  _refreshToken,
+} from "@/services/auth";
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { toast } from "sonner";
 
@@ -10,15 +18,20 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   const fetchUser = async () => {
-    const token = localStorage.getItem("accessToken");
-    if (!token) {
-      setUser(null);
-      setLoading(false);
-      return;
-    }
-
+    setLoading(true);
     try {
-      const data = await _getAccount(token);
+      // Gọi refreshToken để lấy accessToken mới
+      const { accessToken } = await _refreshToken();
+      if (!accessToken) {
+        setUser(null);
+        return;
+      }
+
+      // Cập nhật token mới vào localStorage
+      localStorage.setItem("accessToken", accessToken);
+
+      // Dùng token mới để lấy thông tin user
+      const data = await _getAccount(accessToken);
       setUser(data.user || null);
     } catch (err) {
       console.error(err);
@@ -38,13 +51,11 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     if (!user?._id) return;
-    if (user?._id) {
-      socket.emit("newUser", {
-        userId: user._id,
-        senderName: user.username,
-        senderAvatar: user.avatar,
-      });
-    }
+    socket.emit("newUser", {
+      userId: user._id,
+      senderName: user.username,
+      senderAvatar: user.avatar,
+    });
   }, [user]);
 
   const login = async ({ email, password }) => {
@@ -58,7 +69,7 @@ export const AuthProvider = ({ children }) => {
     } catch (err) {
       console.error(err);
       toast.error(
-        err.response?.data?.error?.message || err.message || "Fetch user failed"
+        err.response?.data?.error?.message || err.message || "Login failed"
       );
       return false;
     }
@@ -69,6 +80,7 @@ export const AuthProvider = ({ children }) => {
       await _logout();
       setUser(null);
       localStorage.removeItem("accessToken");
+      
       toast.success("Logged out successfully");
     } catch (err) {
       console.error(err);
@@ -95,8 +107,49 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const forgotPassword = async (email) => {
+    try {
+      await _forgotPassword(email);
+      toast.success("Reset password email sent!");
+      return true;
+    } catch (err) {
+      console.error(err);
+      toast.error(
+        err.response?.data?.message || err.message || "Forgot password failed"
+      );
+      return false;
+    }
+  };
+
+  const resetPassword = async (token, password) => {
+    try {
+      await _resetPassword(token, password);
+      toast.success("Password reset successfully!");
+      window.location.href = "/login";
+      return true;
+    } catch (err) {
+      console.error(err);
+      toast.error(
+        err.response?.data?.error?.message ||
+          err.message ||
+          "Reset password failed"
+      );
+      return false;
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, register }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        login,
+        logout,
+        register,
+        forgotPassword,
+        resetPassword,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

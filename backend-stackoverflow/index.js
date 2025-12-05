@@ -44,6 +44,7 @@ connectDB().then(async () => {
 app.use("/api/auth", require("./routes/auth"));
 app.use("/api/users", require("./routes/user"));
 app.use("/api/questions", require("./routes/question"));
+app.use("/api/sharedFile", require("./routes/sharedFile"));
 app.use("/api/answers", require("./routes/answer"));
 app.use("/api/comments", require("./routes/comment"));
 app.use("/api/folders", require("./routes/folder"));

@@ -11,13 +11,17 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as appIndexRouteImport } from './routes/(app)/index'
 import { Route as authRegisterRouteImport } from './routes/(auth)/register'
+import { Route as authOauthSuccessRouteImport } from './routes/(auth)/oauth-success'
 import { Route as authLoginRouteImport } from './routes/(auth)/login'
 import { Route as appUsersRouteImport } from './routes/(app)/users'
 import { Route as appTagsRouteImport } from './routes/(app)/tags'
 import { Route as appStatsRouteImport } from './routes/(app)/stats'
+import { Route as appSharedFilesRouteImport } from './routes/(app)/shared-files'
 import { Route as appSearchRouteImport } from './routes/(app)/search'
+import { Route as appFrontendLagRouteImport } from './routes/(app)/frontend-lag'
 import { Route as appAccountRouteImport } from './routes/(app)/account'
 import { Route as appQuestionsIndexRouteImport } from './routes/(app)/questions/index'
+import { Route as authResetPasswordTokenRouteImport } from './routes/(auth)/reset-password/$token'
 import { Route as appQuestionsAskRouteImport } from './routes/(app)/questions/ask'
 import { Route as appQuestionsIdRouteImport } from './routes/(app)/questions/$id'
 import { Route as appQuestionsEditIdRouteImport } from './routes/(app)/questions/edit/$id'
@@ -31,6 +35,11 @@ const appIndexRoute = appIndexRouteImport.update({
 const authRegisterRoute = authRegisterRouteImport.update({
   id: '/(auth)/register',
   path: '/register',
+  getParentRoute: () => rootRouteImport,
+})
+const authOauthSuccessRoute = authOauthSuccessRouteImport.update({
+  id: '/(auth)/oauth-success',
+  path: '/oauth-success',
   getParentRoute: () => rootRouteImport,
 })
 const authLoginRoute = authLoginRouteImport.update({
@@ -53,9 +62,19 @@ const appStatsRoute = appStatsRouteImport.update({
   path: '/stats',
   getParentRoute: () => rootRouteImport,
 })
+const appSharedFilesRoute = appSharedFilesRouteImport.update({
+  id: '/(app)/shared-files',
+  path: '/shared-files',
+  getParentRoute: () => rootRouteImport,
+})
 const appSearchRoute = appSearchRouteImport.update({
   id: '/(app)/search',
   path: '/search',
+  getParentRoute: () => rootRouteImport,
+})
+const appFrontendLagRoute = appFrontendLagRouteImport.update({
+  id: '/(app)/frontend-lag',
+  path: '/frontend-lag',
   getParentRoute: () => rootRouteImport,
 })
 const appAccountRoute = appAccountRouteImport.update({
@@ -66,6 +85,11 @@ const appAccountRoute = appAccountRouteImport.update({
 const appQuestionsIndexRoute = appQuestionsIndexRouteImport.update({
   id: '/(app)/questions/',
   path: '/questions/',
+  getParentRoute: () => rootRouteImport,
+})
+const authResetPasswordTokenRoute = authResetPasswordTokenRouteImport.update({
+  id: '/(auth)/reset-password/$token',
+  path: '/reset-password/$token',
   getParentRoute: () => rootRouteImport,
 })
 const appQuestionsAskRoute = appQuestionsAskRouteImport.update({
@@ -92,15 +116,19 @@ const appQuestionsEditPreviewIdRoute =
 
 const rootRouteChildren = {
   appAccountRoute: appAccountRoute,
+  appFrontendLagRoute: appFrontendLagRoute,
   appSearchRoute: appSearchRoute,
+  appSharedFilesRoute: appSharedFilesRoute,
   appStatsRoute: appStatsRoute,
   appTagsRoute: appTagsRoute,
   appUsersRoute: appUsersRoute,
   authLoginRoute: authLoginRoute,
+  authOauthSuccessRoute: authOauthSuccessRoute,
   authRegisterRoute: authRegisterRoute,
   appIndexRoute: appIndexRoute,
   appQuestionsIdRoute: appQuestionsIdRoute,
   appQuestionsAskRoute: appQuestionsAskRoute,
+  authResetPasswordTokenRoute: authResetPasswordTokenRoute,
   appQuestionsIndexRoute: appQuestionsIndexRoute,
   appQuestionsEditPreviewIdRoute: appQuestionsEditPreviewIdRoute,
   appQuestionsEditIdRoute: appQuestionsEditIdRoute,

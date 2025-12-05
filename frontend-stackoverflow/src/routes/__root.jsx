@@ -17,8 +17,10 @@ function RootComponent() {
   const navigate = useNavigate();
 
   // Trang không có layout
-  const noLayoutPages = ["/login", "/register"];
-  const isNoLayoutPage = noLayoutPages.includes(location.pathname);
+  const isNoLayoutPage =
+    location.pathname === "/login" ||
+    location.pathname === "/register" ||
+    location.pathname.startsWith("/reset-password/");
 
   // Trang private cần login
   const privatePagesPatterns = [
@@ -66,7 +68,7 @@ function RootComponent() {
           <Header />
           <main className="flex h-screen items-center justify-center bg-gray-100">
             <Outlet />
-            <Toaster />
+            <Toaster position="bottom-center" />
           </main>
         </div>
       ) : (
@@ -76,7 +78,7 @@ function RootComponent() {
             <Sidebar />
             <main className="flex-1 py-4">
               <Outlet />
-              <Toaster />
+              <Toaster position="bottom-center" />
             </main>
           </div>
           <Footer />

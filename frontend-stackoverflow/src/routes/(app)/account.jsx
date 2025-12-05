@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth";
 import { createFileRoute } from "@tanstack/react-router";
 
@@ -126,14 +127,12 @@ function RouteComponent() {
       </div>
 
       {/* Logout */}
-      <div>
-        <button
+        <Button
           onClick={logout}
           className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
         >
           Logout
-        </button>
-      </div>
+        </Button>
     </div>
   );
 }

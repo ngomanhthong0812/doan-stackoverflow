@@ -13,9 +13,10 @@ import { useEffect, useState } from "react";
 
 import { _getNotificationByUserId, _markAsRead } from "@/services/notification";
 import { socket } from "@/lib/socket";
+import { Button } from "../ui/button";
 
 export default function Header() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   return (
     <header className="sticky top-0 z-40 border-b bg-white">
@@ -35,14 +36,57 @@ export default function Header() {
             {user ? (
               <>
                 <NotificationDropdown user={user} />
-                <Link to={"/account"}>
-                  <Avatar className="size-8">
-                    <AvatarImage src={user?.avatar} className="object-cover" />
-                    <AvatarFallback>
-                      {user?.username ? user.username[0].toUpperCase() : "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                </Link>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Avatar className="size-8 cursor-pointer">
+                      <AvatarImage
+                        src={user?.avatar}
+                        className="object-cover"
+                      />
+                      <AvatarFallback>
+                        {user?.username ? user.username[0].toUpperCase() : "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                  </PopoverTrigger>
+
+                  <PopoverContent className="w-56 p-4">
+                    <div className="flex flex-col items-start gap-2">
+                      <div className="flex items-center gap-2">
+                        <Avatar className="size-10">
+                          <AvatarImage
+                            src={user?.avatar}
+                            className="object-cover"
+                          />
+                          <AvatarFallback>
+                            {user?.username?.[0].toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{user?.username}</span>
+                          <span className="text-xs text-gray-500">
+                            {user?.email}
+                          </span>
+                        </div>
+                      </div>
+
+                      <hr className="my-2 w-full" />
+
+                      <Button
+                        variant="ghost"
+                        className="w-full mt-1"
+                        onClick={() => (window.location.href = "/account")}
+                      >
+                        Account
+                      </Button>
+                      <Button
+                        onClick={logout}
+                        className="w-full bg-red-600 text-white hover:bg-red-700 transition-colors rounded-md py-2 font-medium"
+                      >
+                        Logout
+                      </Button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </>
             ) : (
               <div className="flex items-center gap-2">

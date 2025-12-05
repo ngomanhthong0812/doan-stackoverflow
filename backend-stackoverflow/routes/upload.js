@@ -15,4 +15,22 @@ router.post("/", upload.single("image"), (req, res) => {
   }
 });
 
+router.post("/multiple", upload.array("files", 10), (req, res) => {
+  try {
+    const uploadedFiles = req.files.map((file) => ({
+      url: file.path,
+      public_id: file.filename,
+      originalName: file.originalname,
+    }));
+
+    return res.json({
+      success: true,
+      files: uploadedFiles,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Upload failed" });
+  }
+});
+
 module.exports = router;
