@@ -9,7 +9,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 
-export default function CreateFolderModal({ open, onOpenChange, onCreate }) {
+export default function CreateFolderModal({
+  open,
+  onOpenChange,
+  onCreate,
+}) {
   const [folderName, setFolderName] = useState("");
 
   const handleCreate = () => {

@@ -19,6 +19,7 @@ import { Route as appStatsRouteImport } from './routes/(app)/stats'
 import { Route as appSharedFilesRouteImport } from './routes/(app)/shared-files'
 import { Route as appSearchRouteImport } from './routes/(app)/search'
 import { Route as appFrontendLagRouteImport } from './routes/(app)/frontend-lag'
+import { Route as appDataStructuresAlgorithmsRouteImport } from './routes/(app)/data-structures-algorithms'
 import { Route as appAccountRouteImport } from './routes/(app)/account'
 import { Route as appQuestionsIndexRouteImport } from './routes/(app)/questions/index'
 import { Route as authResetPasswordTokenRouteImport } from './routes/(auth)/reset-password/$token'
@@ -77,6 +78,12 @@ const appFrontendLagRoute = appFrontendLagRouteImport.update({
   path: '/frontend-lag',
   getParentRoute: () => rootRouteImport,
 })
+const appDataStructuresAlgorithmsRoute =
+  appDataStructuresAlgorithmsRouteImport.update({
+    id: '/(app)/data-structures-algorithms',
+    path: '/data-structures-algorithms',
+    getParentRoute: () => rootRouteImport,
+  })
 const appAccountRoute = appAccountRouteImport.update({
   id: '/(app)/account',
   path: '/account',
@@ -116,6 +123,7 @@ const appQuestionsEditPreviewIdRoute =
 
 const rootRouteChildren = {
   appAccountRoute: appAccountRoute,
+  appDataStructuresAlgorithmsRoute: appDataStructuresAlgorithmsRoute,
   appFrontendLagRoute: appFrontendLagRoute,
   appSearchRoute: appSearchRoute,
   appSharedFilesRoute: appSharedFilesRoute,

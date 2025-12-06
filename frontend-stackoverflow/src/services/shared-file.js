@@ -24,13 +24,6 @@ export const _uploadFiles = async ({ folderId, data }) => {
   return res.data;
 };
 
-export const _addComment = async ({ folderId, content }) => {
-  const res = await axios.post(`/sharedFile/${folderId}/comment`, {
-    content,
-  });
-  return res.data;
-};
-
 export const _deleteFile = async ({ folderId, fileUrl }) => {
   const res = await axios.delete(`/sharedFile/${folderId}/file`, {
     data: { fileUrl },
@@ -40,12 +33,5 @@ export const _deleteFile = async ({ folderId, fileUrl }) => {
 
 export const _deleteFolder = async (folderId) => {
   const res = await axios.delete(`/sharedFile/${folderId}`);
-  return res.data;
-};
-
-export const _deleteComment = async ({ folderId, commentId }) => {
-  const res = await axios.delete(
-    `/sharedFile/${folderId}/comment/${commentId}`
-  );
   return res.data;
 };

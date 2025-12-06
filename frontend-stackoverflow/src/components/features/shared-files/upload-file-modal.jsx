@@ -25,6 +25,7 @@ export default function UploadFileModal({
   onOpenChange,
   folderId,
   onUploaded,
+  fetchFolders,
 }) {
   const [files, setFiles] = useState([]);
   const [uploading, setUploading] = useState(false);
@@ -49,6 +50,7 @@ export default function UploadFileModal({
       onUploaded?.(res.data);
       setFiles([]);
       onOpenChange(false);
+      fetchFolders();
     } catch (err) {
       console.error(err);
       toast.error("Upload failed");

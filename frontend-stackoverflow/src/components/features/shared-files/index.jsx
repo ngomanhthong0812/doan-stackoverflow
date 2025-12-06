@@ -8,21 +8,22 @@ import {
   _getSharedFolders,
   _createFolder,
   _uploadFiles,
-  _addComment,
 } from "@/services/shared-file";
+import { useAuth } from "@/contexts/auth";
+import { useRouter } from "@tanstack/react-router";
 
 export default function SharedFiles() {
+  const { user } = useAuth();
+  const router = useRouter();
+
   const [folders, setFolders] = useState([]);
   const [selectedFolder, setSelectedFolder] = useState(null);
   const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
 
-  const currentUser = { username: "You" };
-
   useEffect(() => {
     fetchFolders();
   }, []);
-
 
   const fetchFolders = async () => {
     try {
@@ -39,6 +40,7 @@ export default function SharedFiles() {
       const res = await _createFolder({ title, description: "" });
       setFolders([res.data, ...folders]);
       setIsFolderModalOpen(false);
+      fetchFolders();
     } catch (err) {
       console.error(err);
     }
@@ -46,6 +48,7 @@ export default function SharedFiles() {
 
   const handleUploadFile = async (files) => {
     if (!selectedFolder) return;
+
     try {
       const res = await _uploadFiles({ folderId: selectedFolder._id, files });
       setFolders(
@@ -53,16 +56,7 @@ export default function SharedFiles() {
       );
       setSelectedFolder(res.data);
       setIsUploadModalOpen(false);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const handleAddComment = async (folderId, content) => {
-    try {
-      const res = await _addComment({ folderId, content });
-      setFolders(folders.map((f) => (f._id === folderId ? res.data : f)));
-      setSelectedFolder(res.data);
+      fetchFolders();
     } catch (err) {
       console.error(err);
     }
@@ -73,14 +67,23 @@ export default function SharedFiles() {
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Shared Files</h2>
         <div className="flex gap-2">
+          {/* CREATE BUTTON - CHECK LOGIN */}
           <Button
-            onClick={() => setIsFolderModalOpen(true)}
+            onClick={() => {
+              if (!user) return router.navigate({ to: "/login" });
+              setIsFolderModalOpen(true);
+            }}
             className="!bg-[#1b75d0] hover:!bg-[#155ca2] text-white w-fit"
           >
             Create Folder
           </Button>
+
+          {/* UPLOAD BUTTON - CHECK LOGIN */}
           <Button
-            onClick={() => setIsUploadModalOpen(true)}
+            onClick={() => {
+              if (!user) return router.navigate({ to: "/login" });
+              setIsUploadModalOpen(true);
+            }}
             className="!bg-[#15a238] hover:!bg-[#107c2b] text-white w-fit"
           >
             Upload File
@@ -93,12 +96,9 @@ export default function SharedFiles() {
           folders={folders}
           selectedFolder={selectedFolder}
           onSelectFolder={setSelectedFolder}
+          fetchFolders={fetchFolders}
         />
-        <FolderDetail
-          folder={selectedFolder}
-          currentUser={currentUser}
-          onAddComment={handleAddComment}
-        />
+        <FolderDetail folder={selectedFolder} fetchFolders={fetchFolders} />
       </div>
 
       <CreateFolderModal
@@ -106,11 +106,13 @@ export default function SharedFiles() {
         onOpenChange={setIsFolderModalOpen}
         onCreate={handleCreateFolder}
       />
+
       <UploadFileModal
         open={isUploadModalOpen}
         onOpenChange={setIsUploadModalOpen}
         onUpload={handleUploadFile}
         folderId={selectedFolder?._id}
+        fetchFolders={fetchFolders}
       />
     </div>
   );

@@ -14,7 +14,7 @@ export default function HomeSidebar() {
         </li>
         <li className="flex items-start gap-2">
           <Megaphone size={16} className="text-gray-500 mt-0.5" />
-          <span>stackoverflow.ai - rebuilt for attribution</span>
+          <span>CodeBuddy.ai - rebuilt for attribution</span>
         </li>
         <li className="flex items-start gap-2">
           <Megaphone size={16} className="text-gray-500 mt-0.5" />

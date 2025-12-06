@@ -2,7 +2,6 @@ import { Search, Inbox } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Link, useNavigate } from "@tanstack/react-router";
-import logo from "@/assets/logo-stackoverflow.svg";
 import { useAuth } from "@/contexts/auth";
 import {
   Popover,
@@ -23,8 +22,11 @@ export default function Header() {
       <div className="mx-auto flex h-12 container items-center gap-4 justify-between">
         <div className="flex items-center">
           {/* Logo */}
-          <Link href="/questions" className="block px-3">
-            <img src={logo} alt="Logo" className="h-7 w-auto" />
+          <Link href="/questions" className="flex items-center gap-2 px-3">
+            <img src="/Logo.png" alt="Logo" className="h-11 w-auto" />
+            <span className="text-2xl font-extrabold bg-gradient-to-r from-green-500 to-emerald-300 text-transparent bg-clip-text drop-shadow-sm">
+              CodeBuddy
+            </span>
           </Link>
         </div>
 

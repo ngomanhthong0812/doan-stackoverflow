@@ -29,8 +29,6 @@ exports.uploadFiles = async (req, res) => {
   try {
     const folderId = req.params.id;
     const data = req.body.data;
-    console.log(folderId);
-    console.log(data);
 
     const updated = await SharedFileService.uploadFiles(
       folderId,

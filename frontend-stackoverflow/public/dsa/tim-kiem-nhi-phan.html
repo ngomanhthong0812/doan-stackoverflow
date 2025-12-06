@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo Trực Quan Cây Nhị Phân (BST)</title>
+    <!-- Sử dụng Tailwind CSS qua CDN để style nhanh và đẹp -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Tùy chỉnh thêm animation */
+        circle { transition: fill 0.4s ease, stroke 0.4s ease, transform 0.3s; }
+        text { font-family: 'Segoe UI', sans-serif; font-weight: bold; pointer-events: none; user-select: none; }
+        line { stroke: #cbd5e1; stroke-width: 2; transition: all 0.5s; }
+        
+        /* Hiệu ứng nổi cho nút */
+        .btn { transition: all 0.2s; }
+        .btn:active { transform: scale(0.95); }
+        
+        /* Container SVG có thể cuộn nếu cây quá lớn */
+        #tree-container {
+            overflow: auto;
+            background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col items-center p-4">
+
+    <h2 class="text-2xl md:text-3xl font-bold text-slate-700 mb-6 text-center">Mô Phỏng Cây Nhị Phân Tìm Kiếm (BST)</h2>
+
+    <!-- Bảng điều khiển -->
+    <div class="bg-white p-4 rounded-xl shadow-lg w-full max-w-4xl flex flex-col md:flex-row gap-4 justify-center items-center mb-6 border border-slate-200">
+        
+        <!-- Nhóm Thêm -->
+        <div class="flex gap-2">
+            <input type="number" id="inputVal" class="px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-24" placeholder="Số...">
+            <button class="btn bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium shadow-sm" onclick="handleAdd()">Thêm</button>
+        </div>
+
+        <div class="hidden md:block w-px h-10 bg-slate-200 mx-2"></div>
+
+        <!-- Nhóm Tìm -->
+        <div class="flex gap-2">
+            <input type="number" id="searchVal" class="px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 w-24" placeholder="Tìm...">
+            <button class="btn bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium shadow-sm" onclick="handleSearch()">Tìm</button>
+        </div>
+
+        <div class="hidden md:block w-px h-10 bg-slate-200 mx-2"></div>
+
+        <!-- Nhóm Duyệt & Reset -->
+        <div class="flex flex-wrap gap-2 justify-center">
+            <button class="btn bg-purple-500 hover:bg-purple-600 text-white px-3 py-2 rounded-lg text-sm font-medium shadow-sm" onclick="handleTraversal('NLR')">NLR (Tiền)</button>
+            <button class="btn bg-purple-500 hover:bg-purple-600 text-white px-3 py-2 rounded-lg text-sm font-medium shadow-sm" onclick="handleTraversal('LNR')">LNR (Trung)</button>
+            <button class="btn bg-purple-500 hover:bg-purple-600 text-white px-3 py-2 rounded-lg text-sm font-medium shadow-sm" onclick="handleTraversal('LRN')">LRN (Hậu)</button>
+            <button class="btn bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-sm font-medium shadow-sm ml-2" onclick="resetTree()">Reset</button>
+        </div>
+    </div>
+
+    <!-- Thông báo trạng thái -->
+    <div id="message" class="h-8 mb-2 text-slate-500 font-medium italic">Nhập số để bắt đầu xây dựng cây...</div>
+    
+    <!-- Kết quả duyệt -->
+    <div id="result" class="hidden mb-6 text-blue-600 font-mono bg-blue-50 px-6 py-2 rounded-full border border-blue-100 shadow-sm"></div>
+
+    <!-- Khu vực vẽ cây -->
+    <div id="tree-container" class="w-full max-w-5xl h-[500px] bg-white border border-slate-200 rounded-xl shadow-inner relative flex justify-center items-center">
+        <svg id="svg-tree" width="1200" height="600" viewBox="0 0 1200 600" class="min-w-full min-h-full"></svg>
+    </div>
+
+    <script>
+        // --- CẤU TRÚC DỮ LIỆU ---
+        class Node {
+            constructor(value, x, y) {
+                this.value = value;
+                this.left = null;
+                this.right = null;
+                this.x = x;
+                this.y = y;
+            }
+        }
+
+        let root = null;
+        let isAnimating = false;
+        const svg = document.getElementById('svg-tree');
+        const msgBox = document.getElementById('message');
+        const resBox = document.getElementById('result');
+        let highlightVal = null; // Node đang xét
+        let foundVal = null;     // Node tìm thấy
+
+        // Cấu hình vẽ
+        const START_X = 600;
+        const START_Y = 50;
+        const BASE_GAP = 280;
+
+        // --- HÀM HỖ TRỢ ---
+        const sleep = ms => new Promise(res => setTimeout(res, ms));
+
+        function setMessage(text) { 
+            msgBox.innerText = text; 
+            msgBox.classList.remove('animate-pulse');
+            void msgBox.offsetWidth; // trigger reflow
+            msgBox.classList.add('animate-pulse');
+        }
+        
+        function setResult(arr) {
+            if(arr.length > 0) {
+                resBox.classList.remove('hidden');
+                resBox.style.display = 'inline-block';
+                resBox.innerText = 'Kết quả: ' + arr.join(' → ');
+            } else {
+                resBox.classList.add('hidden');
+                resBox.style.display = 'none';
+            }
+        }
+
+        // --- VẼ CÂY (RENDER) ---
+        function drawTree() {
+            svg.innerHTML = ''; // Xóa trắng SVG
+            if (!root) {
+                svg.innerHTML = '<text x="600" y="300" text-anchor="middle" fill="#94a3b8" font-size="20">Cây Trống (Hãy thêm node)</text>';
+                return;
+            }
+            // Vẽ đường nối trước (để nằm dưới node)
+            drawLines(root);
+            // Vẽ node sau
+            drawNodes(root);
+        }
+
+        function drawLines(node) {
+            if (!node) return;
+            if (node.left) {
+                createLine(node.x, node.y, node.left.x, node.left.y);
+                drawLines(node.left);
+            }
+            if (node.right) {
+                createLine(node.x, node.y, node.right.x, node.right.y);
+                drawLines(node.right);
+            }
+        }
+
+        function drawNodes(node) {
+            if (!node) return;
+            
+            // Xác định màu
+            let fillColor = "#3b82f6"; // Blue-500
+            let strokeColor = "white";
+            let radius = 22;
+            
+            if (node.value === highlightVal) {
+                fillColor = "#eab308"; // Yellow-500
+                radius = 25;
+            }
+            if (node.value === foundVal) {
+                fillColor = "#22c55e"; // Green-500
+                radius = 25;
+            }
+
+            // Vẽ hình tròn (node)
+            const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            circle.setAttribute("cx", node.x);
+            circle.setAttribute("cy", node.y);
+            circle.setAttribute("r", radius);
+            circle.setAttribute("fill", fillColor);
+            circle.setAttribute("stroke", strokeColor);
+            circle.setAttribute("stroke-width", 3);
+            // Thêm shadow nhẹ bằng filter (optional, bỏ qua cho đơn giản)
+            svg.appendChild(circle);
+
+            // Vẽ số
+            const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            text.setAttribute("x", node.x);
+            text.setAttribute("y", node.y);
+            text.setAttribute("dy", ".35em");
+            text.setAttribute("text-anchor", "middle");
+            text.setAttribute("fill", "white");
+            text.setAttribute("font-size", "16");
+            text.textContent = node.value;
+            svg.appendChild(text);
+
+            drawNodes(node.left);
+            drawNodes(node.right);
+        }
+
+        function createLine(x1, y1, x2, y2) {
+            const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            line.setAttribute("x1", x1);
+            line.setAttribute("y1", y1);
+            line.setAttribute("x2", x2);
+            line.setAttribute("y2", y2);
+            svg.appendChild(line);
+        }
+
+        // --- LOGIC TÍNH TỌA ĐỘ ---
+        function updatePositions(node, x, y, level) {
+            if (!node) return;
+            // Thuật toán khoảng cách: Giảm khoảng cách theo độ sâu
+            const gap = BASE_GAP / Math.pow(1.85, level); 
+            
+            node.x = x;
+            node.y = y;
+            updatePositions(node.left, x - gap, y + 70, level + 1);
+            updatePositions(node.right, x + gap, y + 70, level + 1);
+        }
+
+        // --- CÁC CHỨC NĂNG CHÍNH ---
+
+        // 1. THÊM NODE
+        async function handleAdd() {
+            const input = document.getElementById('inputVal');
+            const val = parseInt(input.value);
+            if (isNaN(val)) return;
+            if (isAnimating) {
+                setMessage("Vui lòng đợi hiệu ứng kết thúc...");
+                return;
+            }
+            
+            isAnimating = true;
+            setMessage(`Đang thêm số ${val}...`);
+            input.value = '';
+            input.focus();
+            setResult([]);
+            foundVal = null;
+
+            if (!root) {
+                root = new Node(val, START_X, START_Y);
+                drawTree();
+                setMessage(`Đã tạo gốc ${val}`);
+                isAnimating = false;
+                return;
+            }
+
+            let current = root;
+            let depth = 0;
+            while (true) {
+                highlightVal = current.value;
+                drawTree();
+                await sleep(500);
+
+                if (val === current.value) {
+                    setMessage(`Số ${val} đã tồn tại!`);
+                    highlightVal = null;
+                    drawTree();
+                    isAnimating = false;
+                    return;
+                }
+
+                if (val < current.value) {
+                    if (!current.left) {
+                        current.left = new Node(val, 0, 0); // Tọa độ tạm
+                        break;
+                    }
+                    current = current.left;
+                } else {
+                    if (!current.right) {
+                        current.right = new Node(val, 0, 0); // Tọa độ tạm
+                        break;
+                    }
+                    current = current.right;
+                }
+                depth++;
+            }
+
+            highlightVal = null;
+            // Tính toán lại vị trí cho toàn bộ cây
+            updatePositions(root, START_X, START_Y, 0); 
+            drawTree();
+            
+            // Hiệu ứng "pop" cho node mới (giả lập bằng cách highlight node đó)
+            foundVal = val;
+            drawTree();
+            await sleep(300);
+            foundVal = null;
+            drawTree();
+
+            setMessage(`Đã thêm ${val} thành công.`);
+            isAnimating = false;
+        }
+
+        // 2. TÌM KIẾM
+        async function handleSearch() {
+            const input = document.getElementById('searchVal');
+            const val = parseInt(input.value);
+            if (isNaN(val) || !root || isAnimating) return;
+
+            isAnimating = true;
+            setMessage(`Đang tìm kiếm ${val}...`);
+            foundVal = null;
+            setResult([]);
+
+            let current = root;
+            let found = false;
+
+            while (current) {
+                highlightVal = current.value;
+                drawTree();
+                await sleep(600);
+
+                if (current.value === val) {
+                    foundVal = current.value;
+                    found = true;
+                    break;
+                }
+
+                if (val < current.value) current = current.left;
+                else current = current.right;
+            }
+
+            highlightVal = null;
+            drawTree();
+            
+            if (found) setMessage(`Đã TÌM THẤY số ${val}!`);
+            else setMessage(`KHÔNG tìm thấy số ${val}.`);
+            
+            isAnimating = false;
+        }
+
+        // 3. DUYỆT CÂY (NLR, LNR, LRN)
+        async function handleTraversal(type) {
+            if (!root || isAnimating) return;
+            isAnimating = true;
+            setMessage(`Đang duyệt cây theo ${type}...`);
+            foundVal = null;
+            highlightVal = null;
+            let resultArr = [];
+            setResult([]);
+
+            await traverseRecursive(root, type, resultArr);
+
+            highlightVal = null;
+            drawTree();
+            setMessage(`Hoàn tất duyệt ${type}.`);
+            isAnimating = false;
+        }
+
+        async function traverseRecursive(node, type, arr) {
+            if (!node) return;
+
+            // Xử lý NLR (Tiền thứ tự)
+            if (type === 'NLR') {
+                await visit(node, arr);
+                await traverseRecursive(node.left, type, arr);
+                await traverseRecursive(node.right, type, arr);
+            }
+            // Xử lý LNR (Trung thứ tự - Tăng dần)
+            else if (type === 'LNR') {
+                await traverseRecursive(node.left, type, arr);
+                await visit(node, arr);
+                await traverseRecursive(node.right, type, arr);
+            }
+            // Xử lý LRN (Hậu thứ tự)
+            else if (type === 'LRN') {
+                await traverseRecursive(node.left, type, arr);
+                await traverseRecursive(node.right, type, arr);
+                await visit(node, arr);
+            }
+        }
+
+        async function visit(node, arr) {
+            highlightVal = node.value;
+            drawTree();
+            arr.push(node.value);
+            setResult([...arr]); // Cập nhật mảng kết quả
+            await sleep(600);
+        }
+
+        // RESET
+        function resetTree() {
+            if (isAnimating) return;
+            root = null;
+            highlightVal = null;
+            foundVal = null;
+            setResult([]);
+            document.getElementById('inputVal').value = '';
+            document.getElementById('searchVal').value = '';
+            setMessage('Đã xóa cây. Hãy nhập số mới.');
+            drawTree();
+        }
+
+        // --- KHỞI TẠO MẪU ---
+        // Tạo một vài node mẫu để người dùng không thấy trống
+        async function initSample() {
+            const samples = [50, 30, 70, 20, 40, 60, 80];
+            for (let val of samples) {
+                 // Logic insert nhanh không animation
+                 if (!root) { root = new Node(val, START_X, START_Y); continue; }
+                 let current = root;
+                 while(true) {
+                     if (val < current.value) {
+                         if(!current.left) { current.left = new Node(val, 0,0); break; }
+                         current = current.left;
+                     } else {
+                         if(!current.right) { current.right = new Node(val, 0,0); break; }
+                         current = current.right;
+                     }
+                 }
+            }
+            updatePositions(root, START_X, START_Y, 0);
+            drawTree();
+            setMessage("Sẵn sàng! (Đã tạo mẫu cây)");
+        }
+
+        // Chạy
+        drawTree();
+        // Uncomment dòng dưới nếu muốn tự động tạo cây mẫu khi load
+        // initSample(); 
+    </script>
+</body>
+</html>

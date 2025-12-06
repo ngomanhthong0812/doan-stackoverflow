@@ -16,6 +16,8 @@ exports.createFolder = async (data) => {
 
 // Upload file vào folder
 exports.uploadFiles = async (folderId, files, userId) => {
+  console.log(files);
+
   const formattedFiles = files.map((file) => ({
     fileName: file.originalName,
     fileUrl: file.url,

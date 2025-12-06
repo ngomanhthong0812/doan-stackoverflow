@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo Tìm Kiếm Tuyến Tính (Linear Search)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; }
+        
+        /* Hiệu ứng cho các khối mảng */
+        .array-box {
+            transition: all 0.3s ease;
+            transform: scale(1);
+        }
+        
+        /* Trạng thái đang xét */
+        .current-check {
+            background-color: #eab308 !important; /* Vàng */
+            color: white;
+            transform: scale(1.1);
+            box-shadow: 0 10px 15px -3px rgba(234, 179, 8, 0.4);
+            border-color: #ca8a04 !important;
+        }
+
+        /* Trạng thái tìm thấy */
+        .found {
+            background-color: #22c55e !important; /* Xanh lá */
+            color: white;
+            transform: scale(1.15);
+            box-shadow: 0 10px 15px -3px rgba(34, 197, 94, 0.5);
+            border-color: #16a34a !important;
+        }
+
+        /* Trạng thái không khớp (đã đi qua) */
+        .visited {
+            opacity: 0.5;
+            background-color: #f1f5f9;
+            border-color: #cbd5e1;
+        }
+
+        /* Highlight dòng code */
+        .highlight-code {
+            background-color: #fef08a; /* Vàng nhạt */
+            font-weight: bold;
+            color: #854d0e;
+            border-left: 4px solid #eab308;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex flex-col items-center p-6">
+
+    <h1 class="text-3xl font-bold text-slate-700 mb-2">Tìm Kiếm Tuyến Tính (Linear Search)</h1>
+    <p class="text-slate-500 mb-8 text-center max-w-2xl">
+        Thuật toán duyệt qua từng phần tử của mảng một cách tuần tự để tìm giá trị cần thiết.
+    </p>
+
+    <div class="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Cột Trái: Điều khiển & Mảng -->
+        <div class="lg:col-span-2 space-y-6">
+            
+            <!-- Panel Điều khiển -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <div class="flex flex-wrap gap-4 items-end">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-1">Số phần tử</label>
+                        <input type="number" id="arraySize" value="10" min="5" max="20" class="w-24 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                    <button onclick="generateArray()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium transition active:scale-95">
+                        Tạo Mảng Mới
+                    </button>
+                    
+                    <div class="w-px h-10 bg-slate-200 mx-2 hidden sm:block"></div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-1">Giá trị cần tìm (x)</label>
+                        <input type="number" id="targetValue" class="w-24 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 outline-none" placeholder="Nhập số">
+                    </div>
+                    <button onclick="startSearch()" id="btnSearch" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium transition active:scale-95 shadow-md shadow-green-200">
+                        Bắt Đầu Tìm
+                    </button>
+                </div>
+            </div>
+
+            <!-- Kết quả hiển thị (MỚI) -->
+            <div id="result-box" class="hidden p-4 rounded-xl text-center font-bold text-lg border shadow-sm transition-all duration-300 transform scale-100">
+                <!-- Nội dung kết quả sẽ hiện ở đây -->
+            </div>
+
+            <!-- Khu vực hiển thị Mảng -->
+            <div class="bg-white p-8 rounded-xl shadow-md border border-slate-200 min-h-[200px] flex flex-col justify-center items-center relative overflow-hidden">
+                <div id="array-container" class="flex flex-wrap justify-center gap-3">
+                    <!-- Các phần tử mảng sẽ được render ở đây -->
+                </div>
+                <div id="pointer-arrow" class="mt-4 text-2xl text-yellow-500 font-bold hidden animate-bounce">
+                    ⬆ <span class="text-sm font-normal text-slate-500">i</span>
+                </div>
+            </div>
+
+            <!-- Log trạng thái -->
+            <div id="status-log" class="bg-slate-100 p-4 rounded-lg border border-slate-200 font-mono text-sm text-slate-700 h-24 overflow-y-auto">
+                Sẵn sàng. Hãy nhập giá trị và nhấn tìm kiếm.
+            </div>
+        </div>
+
+        <!-- Cột Phải: Mã Giả -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 h-fit">
+            <h3 class="font-bold text-slate-700 mb-4 border-b pb-2">Giải Thuật (Pseudo-code)</h3>
+            <div class="font-mono text-sm space-y-2 text-slate-600" id="pseudo-code">
+                <div id="step-1" class="p-1 pl-2 rounded">Bước 1: Thiết lập i = 0</div>
+                <div id="step-2" class="p-1 pl-2 rounded">Bước 2: Nếu i >= n -> KẾT THÚC (Không thấy)</div>
+                <div id="step-3" class="p-1 pl-2 rounded">Bước 3: Nếu A[i] == x -> KẾT THÚC (Tìm thấy)</div>
+                <div id="step-4" class="p-1 pl-2 rounded">Bước 4: Tăng i lên 1 (i = i + 1)</div>
+                <div id="step-5" class="p-1 pl-2 rounded">Bước 5: Quay lại Bước 2</div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let currentArray = [];
+        let isAnimating = false;
+        const container = document.getElementById('array-container');
+        const statusLog = document.getElementById('status-log');
+        const pointer = document.getElementById('pointer-arrow');
+        
+        // Hàm hỗ trợ delay
+        const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        function log(msg, type = 'info') {
+            const color = type === 'success' ? 'text-green-600 font-bold' : (type === 'error' ? 'text-red-500' : 'text-slate-700');
+            statusLog.innerHTML = `<div class="${color}">> ${msg}</div>` + statusLog.innerHTML;
+        }
+
+        // Helper hiển thị kết quả
+        function showResult(found, value, index) {
+            const resBox = document.getElementById('result-box');
+            resBox.classList.remove('hidden');
+            if (found) {
+                resBox.className = "p-4 rounded-xl text-center font-bold text-lg border shadow-sm transition-all duration-300 bg-green-100 text-green-700 border-green-200";
+                resBox.innerHTML = `✅ KẾT QUẢ: Tìm thấy số <span class="text-2xl">${value}</span> tại vị trí chỉ mục <span class="text-2xl">${index}</span>`;
+            } else {
+                resBox.className = "p-4 rounded-xl text-center font-bold text-lg border shadow-sm transition-all duration-300 bg-red-100 text-red-700 border-red-200";
+                resBox.innerHTML = `❌ KẾT QUẢ: Không tìm thấy số <span class="text-2xl">${value}</span> trong mảng`;
+            }
+        }
+
+        function highlightStep(stepId) {
+            document.querySelectorAll('#pseudo-code div').forEach(div => div.classList.remove('highlight-code'));
+            if(stepId) document.getElementById(stepId).classList.add('highlight-code');
+        }
+
+        // Tạo mảng ngẫu nhiên
+        function generateArray() {
+            if (isAnimating) return;
+            const size = parseInt(document.getElementById('arraySize').value) || 10;
+            currentArray = [];
+            container.innerHTML = '';
+            statusLog.innerHTML = '';
+            pointer.classList.add('hidden');
+            document.getElementById('result-box').classList.add('hidden'); // Ẩn kết quả cũ
+            highlightStep(null);
+
+            for (let i = 0; i < size; i++) {
+                // Random số từ 1 đến 99
+                const val = Math.floor(Math.random() * 99) + 1;
+                currentArray.push(val);
+
+                // Tạo DOM Element
+                const box = document.createElement('div');
+                box.className = 'array-box w-12 h-12 flex items-center justify-center border-2 border-slate-300 rounded-lg text-lg font-bold bg-white text-slate-700 relative';
+                box.id = `box-${i}`;
+                box.innerText = val;
+
+                // Thêm index nhỏ bên dưới
+                const idxLabel = document.createElement('div');
+                idxLabel.className = 'absolute -bottom-6 text-xs text-slate-400 font-normal';
+                idxLabel.innerText = i;
+                box.appendChild(idxLabel);
+
+                container.appendChild(box);
+            }
+            log(`Đã tạo mảng mới với ${size} phần tử.`);
+        }
+
+        // Hàm tìm kiếm chính
+        async function startSearch() {
+            if (isAnimating) return;
+            const targetInput = document.getElementById('targetValue');
+            const target = parseInt(targetInput.value);
+
+            if (isNaN(target)) {
+                alert("Vui lòng nhập số cần tìm (x)!");
+                targetInput.focus();
+                return;
+            }
+
+            isAnimating = true;
+            document.getElementById('btnSearch').classList.add('opacity-50', 'cursor-not-allowed');
+            log(`Bắt đầu tìm kiếm giá trị x = ${target}...`);
+            pointer.classList.remove('hidden');
+            document.getElementById('result-box').classList.add('hidden'); // Ẩn kết quả cũ khi bắt đầu tìm mới
+
+            // --- BƯỚC 1: i = 0 ---
+            highlightStep('step-1');
+            await sleep(800);
+
+            for (let i = 0; i < currentArray.length; i++) {
+                const box = document.getElementById(`box-${i}`);
+                
+                // Di chuyển mũi tên (giả lập đơn giản bằng cách reset style hoặc để yên vị trí tương đối)
+                // Thực tế trong grid, ta chỉ cần highlight box là đủ rõ.
+
+                // --- BƯỚC 2: Kiểm tra i > n ---
+                highlightStep('step-2');
+                log(`Kiểm tra chỉ số i=${i} có > n không? (Không)`);
+                await sleep(600);
+
+                // --- Highlight phần tử đang xét ---
+                box.classList.add('current-check');
+                log(`Đang xét A[${i}] = ${currentArray[i]}...`);
+                await sleep(800);
+
+                // --- BƯỚC 3: So sánh ---
+                highlightStep('step-3');
+                if (currentArray[i] === target) {
+                    box.classList.remove('current-check');
+                    box.classList.add('found');
+                    log(`ĐÃ TÌM THẤY! A[${i}] (${currentArray[i]}) bằng giá trị cần tìm (${target}).`, 'success');
+                    highlightStep('step-3'); // Giữ highlight ở bước tìm thấy
+                    
+                    showResult(true, target, i); // Hiển thị kết quả thành công
+
+                    isAnimating = false;
+                    document.getElementById('btnSearch').classList.remove('opacity-50', 'cursor-not-allowed');
+                    return; // Kết thúc
+                } else {
+                    log(`Không khớp. ${currentArray[i]} ≠ ${target}.`, 'error');
+                    await sleep(600);
+                    box.classList.remove('current-check');
+                    box.classList.add('visited'); // Đánh dấu đã qua
+                }
+
+                // --- BƯỚC 4 & 5: Tăng i và lặp lại ---
+                highlightStep('step-4');
+                log(`Tăng i lên ${i+1}. Quay lại đầu vòng lặp.`);
+                await sleep(500);
+                highlightStep('step-5');
+                await sleep(300);
+            }
+
+            // --- BƯỚC 2 (Trường hợp thoát vòng lặp) ---
+            highlightStep('step-2');
+            log("Đã duyệt hết mảng (i > n).", 'error');
+            await sleep(500);
+            log(`KHÔNG TÌM THẤY giá trị ${target} trong mảng.`, 'error');
+            
+            showResult(false, target, -1); // Hiển thị kết quả thất bại
+
+            isAnimating = false;
+            document.getElementById('btnSearch').classList.remove('opacity-50', 'cursor-not-allowed');
+            pointer.classList.add('hidden');
+        }
+
+        // Khởi tạo ban đầu
+        generateArray();
+
+    </script>
+</body>
+</html>

@@ -5,7 +5,7 @@ import {
   MessageSquare,
   Share,
   Tag,
-  Users,
+  Layers,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Link, useMatchRoute } from "@tanstack/react-router";
@@ -22,6 +22,11 @@ export default function Sidebar() {
     { icon: Tag, label: "Tags", to: "/tags" },
     { icon: Share, label: "Shared Files", to: "/shared-files" },
     { icon: Code, label: "Frontend lag", to: "/frontend-lag" },
+    {
+      icon: Layers,
+      label: "Data Structures & Algorithms",
+      to: "/data-structures-algorithms",
+    },
     { icon: ChartCandlestick, label: "Stats", to: "/stats", adminOnly: true }, // adminOnly
   ];
 
