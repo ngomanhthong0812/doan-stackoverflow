@@ -133,46 +133,6 @@ button:focus-visible {
   max-width: 100%;
 }
 
-@media (min-width: 640px) {
-  .container {
-    max-width: 42rem;
-    padding-left: 1rem;
-    padding-right: 1rem;
-  }
-}
-
-@media (min-width: 768px) {
-  .container {
-    max-width: 50rem;
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
-  }
-}
-
-@media (min-width: 1024px) {
-  .container {
-    max-width: 62rem;
-    padding-left: 2rem;
-    padding-right: 2rem;
-  }
-}
-
-@media (min-width: 1280px) {
-  .container {
-    max-width: 74rem;
-    padding-left: 2rem;
-    padding-right: 2rem;
-  }
-}
-
-@media (min-width: 1536px) {
-  .container {
-    max-width: 82rem;
-    padding-left: 2rem;
-    padding-right: 2rem;
-  }
-}
-
 .ql-editor img {
   max-height: 350px;
   object-fit: contain;

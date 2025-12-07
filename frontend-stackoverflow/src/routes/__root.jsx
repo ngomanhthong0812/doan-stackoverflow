@@ -68,7 +68,13 @@ function RootComponent() {
           <Header />
           <main className="flex h-screen items-center justify-center bg-gray-100">
             <Outlet />
-            <Toaster position="bottom-center" />
+            <Toaster
+              position="top-center"
+              className="!absolute  -translate-y-1/2"
+              offset={{
+                top: "calc(50vh - 48px)",
+              }}
+            />
           </main>
         </div>
       ) : (
@@ -78,7 +84,13 @@ function RootComponent() {
             <Sidebar />
             <main className="flex-1 py-4">
               <Outlet />
-              <Toaster position="bottom-center" />
+              <Toaster
+                position="top-center"
+                className="!absolute -translate-y-1/2"
+                offset={{
+                  top: "calc(50vh - 48px)",
+                }}
+              />
             </main>
           </div>
           <Footer />

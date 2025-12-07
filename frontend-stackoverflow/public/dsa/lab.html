@@ -1,0 +1,777 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Frontend Lab</title>
+    <!-- Sử dụng Tailwind CSS cho giao diện đẹp và nhanh -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      body {
+        background-color: #1e1e1e;
+        color: #d4d4d4;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .editor-container {
+        display: flex;
+        height: 40%;
+        border-bottom: 4px solid #333;
+      }
+      .editor-box {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        border-right: 1px solid #333;
+        min-width: 0;
+      }
+      .editor-box:last-child {
+        border-right: none;
+      }
+      .editor-header {
+        background-color: #252526;
+        padding: 8px 16px;
+        font-weight: bold;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .html-header {
+        color: #e34c26;
+      }
+      .css-header {
+        color: #264de4;
+      }
+      .js-header {
+        color: #f7df1e;
+      }
+
+      textarea {
+        flex: 1;
+        background-color: #1e1e1e;
+        color: #d4d4d4;
+        border: none;
+        resize: none;
+        padding: 10px;
+        font-family: "Consolas", "Monaco", "Courier New", monospace;
+        font-size: 14px;
+        outline: none;
+        line-height: 1.5;
+      }
+      textarea:focus {
+        background-color: #2a2a2a;
+      }
+
+      /* Scrollbar styling */
+      ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #1e1e1e;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #444;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #555;
+      }
+
+      .preview-container {
+        flex: 1;
+        background-color: white;
+        position: relative;
+      }
+      iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+      }
+
+      .toolbar {
+        background-color: #007acc;
+        padding: 0.5rem 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: white;
+      }
+
+      .run-btn {
+        background-color: #4caf50;
+        color: white;
+        padding: 6px 20px;
+        border-radius: 4px;
+        font-weight: bold;
+        transition: background 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        border: none;
+        cursor: pointer;
+      }
+      .run-btn:hover {
+        background-color: #45a049;
+      }
+
+      /* Styling cho Dropdown */
+      .template-select {
+        background-color: #3c3c3c;
+        color: white;
+        border: 1px solid #555;
+        padding: 6px 10px;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        outline: none;
+        cursor: pointer;
+        max-width: 200px;
+      }
+      .load-btn {
+        background-color: #0e639c;
+        color: white;
+        padding: 6px 15px;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        border: none;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      .load-btn:hover {
+        background-color: #1177bb;
+      }
+
+      /* Trạng thái lưu */
+      .save-status {
+        font-size: 0.8rem;
+        margin-right: 10px;
+        opacity: 0.8;
+        font-style: italic;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Thanh công cụ -->
+    <div class="toolbar shadow-md">
+      <div class="font-bold text-lg flex items-center gap-2">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-6 w-6"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+          />
+        </svg>
+        <span class="hidden sm:inline">Frontend Lab</span>
+      </div>
+
+      <!-- Khu vực chọn Template -->
+      <div class="flex items-center gap-2">
+        <span id="saveStatus" class="save-status hidden sm:inline"></span>
+
+        <div class="flex items-center bg-gray-700 rounded p-1">
+          <select id="templateSelect" class="template-select">
+            <option value="login">Mẫu: Đăng Nhập</option>
+            <option value="register">Mẫu: Đăng Ký</option>
+            <option value="forgot">Mẫu: Quên Mật Khẩu</option>
+            <option value="profile">Mẫu: Card Cá Nhân</option>
+            <option value="notification">Mẫu: Thông Báo</option>
+            <option value="product">Mẫu: Thẻ Sản Phẩm</option>
+            <option value="pricing">Mẫu: Bảng Giá</option>
+            <option value="todo">Mẫu: To-Do List</option>
+            <option value="clock">Mẫu: Đồng Hồ Số</option>
+          </select>
+          <button onclick="loadTemplate()" class="load-btn ml-2">
+            Nạp Mẫu
+          </button>
+        </div>
+
+        <button onclick="runCode()" class="run-btn shadow-lg ml-4">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
+              clip-rule="evenodd"
+            />
+          </svg>
+          Chạy (Run)
+        </button>
+      </div>
+    </div>
+
+    <!-- Khu vực nhập liệu (3 cột) -->
+    <div class="editor-container">
+      <!-- HTML Editor -->
+      <div class="editor-box">
+        <div class="editor-header html-header">
+          <span>HTML</span>
+          <span class="text-xs text-gray-500">&lt;/&gt;</span>
+        </div>
+        <textarea
+          id="html-code"
+          placeholder="Nhập mã HTML vào đây..."
+          spellcheck="false"
+          oninput="saveAndStatus()"
+        ></textarea>
+      </div>
+
+      <!-- CSS Editor -->
+      <div class="editor-box">
+        <div class="editor-header css-header">
+          <span>CSS</span>
+          <span class="text-xs text-gray-500">#style</span>
+        </div>
+        <textarea
+          id="css-code"
+          placeholder="Nhập mã CSS vào đây..."
+          spellcheck="false"
+          oninput="saveAndStatus()"
+        ></textarea>
+      </div>
+
+      <!-- JS Editor -->
+      <div class="editor-box">
+        <div class="editor-header js-header">
+          <span>JavaScript</span>
+          <span class="text-xs text-gray-500">{ }</span>
+        </div>
+        <textarea
+          id="js-code"
+          placeholder="Nhập mã JavaScript vào đây..."
+          spellcheck="false"
+          oninput="saveAndStatus()"
+        ></textarea>
+      </div>
+    </div>
+
+    <!-- Khu vực hiển thị kết quả -->
+    <div class="preview-container">
+      <iframe id="preview-frame"></iframe>
+      <div
+        class="absolute top-0 right-0 bg-gray-200 text-gray-600 px-2 py-1 text-xs opacity-70 pointer-events-none"
+      >
+        Preview Area
+      </div>
+    </div>
+
+    <script>
+      // Dữ liệu các mẫu Templates
+      const TEMPLATES = {
+        login: {
+          html: `<div class="login-wrapper">
+    <div class="container">
+        <h2>Đăng Nhập</h2>
+        <form id="loginForm">
+            <div class="input-group">
+                <label>Email</label>
+                <input type="email" id="email" placeholder="example@gmail.com" required>
+            </div>
+            <div class="input-group">
+                <label>Mật khẩu</label>
+                <input type="password" id="password" placeholder="••••••" required>
+            </div>
+            <button type="submit">Đăng nhập</button>
+            <p class="link"><a href="#">Quên mật khẩu?</a></p>
+        </form>
+    </div>
+</div>`,
+          css: `body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+.container { background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 300px; }
+h2 { text-align: center; color: #1a73e8; }
+.input-group { margin-bottom: 1rem; }
+label { display: block; margin-bottom: 5px; color: #555; font-size: 0.9rem; }
+input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+input:focus { border-color: #1a73e8; outline: none; }
+button { width: 100%; padding: 10px; background: #1a73e8; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; margin-top: 10px; }
+button:hover { background: #1557b0; }
+.link { text-align: center; margin-top: 15px; font-size: 0.85rem; }
+a { color: #1a73e8; text-decoration: none; }`,
+          js: `document.getElementById('loginForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    alert('Đang đăng nhập...');
+});`,
+        },
+        register: {
+          html: `<div class="register-wrapper">
+    <div class="container">
+        <h2>Đăng Ký</h2>
+        <form id="registerForm">
+            <div class="input-group">
+                <label>Họ và Tên</label>
+                <input type="text" placeholder="Nguyễn Văn A" required>
+            </div>
+            <div class="input-group">
+                <label>Email</label>
+                <input type="email" placeholder="email@example.com" required>
+            </div>
+            <div class="input-group">
+                <label>Mật khẩu</label>
+                <input type="password" placeholder="Tạo mật khẩu" required>
+            </div>
+            <button type="submit" class="btn-register">Tạo tài khoản</button>
+            <p class="link">Đã có tài khoản? <a href="#">Đăng nhập</a></p>
+        </form>
+    </div>
+</div>`,
+          css: `body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(120deg, #84fab0 0%, #8fd3f4 100%); display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+.container { background: white; padding: 2.5rem; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 320px; }
+h2 { text-align: center; color: #333; margin-top: 0; }
+.input-group { margin-bottom: 1rem; }
+label { display: block; margin-bottom: 5px; color: #666; font-size: 0.9rem; font-weight: 600; }
+input { width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 8px; box-sizing: border-box; transition: 0.3s; }
+input:focus { border-color: #84fab0; outline: none; }
+.btn-register { width: 100%; padding: 12px; background: #333; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 10px; transition: 0.3s; }
+.btn-register:hover { background: #000; transform: translateY(-2px); }
+.link { text-align: center; font-size: 0.9rem; margin-top: 20px; }
+a { color: #2ecc71; text-decoration: none; font-weight: bold; }`,
+          js: `document.getElementById('registerForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    alert('Đăng ký thành công! Vui lòng kiểm tra email.');
+});`,
+        },
+        forgot: {
+          html: `<div class="forgot-wrapper">
+    <div class="card">
+        <div class="icon">🔒</div>
+        <h2>Quên Mật Khẩu?</h2>
+        <p>Đừng lo, hãy nhập email để lấy lại mật khẩu nhé.</p>
+        <input type="email" id="resetEmail" placeholder="Nhập email của bạn">
+        <button onclick="sendReset()">Gửi Link Khôi Phục</button>
+        <div class="back"><a href="#">← Quay lại Đăng nhập</a></div>
+    </div>
+</div>`,
+          css: `body { font-family: sans-serif; background: #e0e5ec; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+.card { background: #e0e5ec; padding: 40px; border-radius: 20px; box-shadow: 9px 9px 16px rgb(163,177,198,0.6), -9px -9px 16px rgba(255,255,255, 0.5); width: 300px; text-align: center; }
+.icon { font-size: 50px; margin-bottom: 10px; }
+h2 { color: #333; margin: 10px 0; }
+p { color: #777; font-size: 0.9rem; margin-bottom: 25px; line-height: 1.5; }
+input { width: 100%; padding: 12px; border: none; border-radius: 50px; background: #e0e5ec; box-shadow: inset 6px 6px 10px 0 rgba(163,177,198, 0.7), inset -6px -6px 10px 0 rgba(255,255,255, 0.8); box-sizing: border-box; text-align: center; color: #555; margin-bottom: 20px; }
+input:focus { outline: none; }
+button { width: 100%; padding: 12px; border-radius: 50px; border: none; background: #007bff; color: white; font-weight: bold; cursor: pointer; box-shadow: 6px 6px 10px 0 rgba(163,177,198, 0.7), -6px -6px 10px 0 rgba(255,255,255, 0.8); transition: 0.2s; }
+button:hover { transform: translateY(-2px); }
+.back { margin-top: 20px; font-size: 0.85rem; }
+a { color: #555; text-decoration: none; }`,
+          js: `function sendReset() {
+    const email = document.getElementById('resetEmail').value;
+    if(email) {
+        alert('Đã gửi link khôi phục đến: ' + email);
+    } else {
+        alert('Vui lòng nhập email!');
+    }
+}`,
+        },
+        notification: {
+          html: `<div class="container">
+    <h2>Demo Thông Báo (Toast)</h2>
+    <div class="buttons">
+        <button onclick="showToast('success')" class="btn success">Thành công</button>
+        <button onclick="showToast('error')" class="btn error">Thất bại</button>
+        <button onclick="showToast('info')" class="btn info">Thông tin</button>
+    </div>
+    <div id="toast-container"></div>
+</div>`,
+          css: `body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f8f9fa; margin: 0; }
+.container { text-align: center; }
+.btn { padding: 10px 20px; margin: 5px; border: none; border-radius: 5px; cursor: pointer; color: white; font-weight: bold; transition: 0.3s; }
+.btn:hover { opacity: 0.9; }
+.success { background: #2ecc71; }
+.error { background: #e74c3c; }
+.info { background: #3498db; }
+#toast-container { position: fixed; top: 20px; right: 20px; display: flex; flex-direction: column; gap: 10px; }
+.toast { min-width: 250px; padding: 15px 20px; border-radius: 5px; background: white; box-shadow: 0 5px 15px rgba(0,0,0,0.2); display: flex; align-items: center; animation: slideIn 0.3s ease; border-left: 5px solid gray; }
+.toast.success { border-left-color: #2ecc71; }
+.toast.error { border-left-color: #e74c3c; }
+.toast.info { border-left-color: #3498db; }
+@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes fadeOut { to { opacity: 0; transform: translateX(100%); } }`,
+          js: `function showToast(type) {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = 'toast ' + type;
+    
+    let msg = '';
+    if(type === 'success') msg = '✅ Lưu thành công!';
+    else if(type === 'error') msg = '❌ Có lỗi xảy ra!';
+    else msg = 'ℹ️ Có tin nhắn mới.';
+    
+    toast.innerText = msg;
+    container.appendChild(toast);
+    
+    // Tự động tắt sau 3 giây
+    setTimeout(() => {
+        toast.style.animation = 'fadeOut 0.3s ease forwards';
+        toast.addEventListener('animationend', () => toast.remove());
+    }, 3000);
+}`,
+        },
+        product: {
+          html: `<div class="product-card">
+    <div class="badge">Hot</div>
+    <div class="product-tumb">
+        <img src="https://assets.adidas.com/images/w_600,f_auto,q_auto/4e894c252d014474941b9702425d206f_9366/Giay_Superstar_XLG_trang_IF8068_01_standard.jpg" alt="">
+    </div>
+    <div class="product-details">
+        <span class="product-cat">Giày Thể Thao</span>
+        <h4><a href="">Adidas Superstar XLG</a></h4>
+        <p>Thiết kế cổ điển, phong cách hiện đại. Êm ái trên từng bước chân.</p>
+        <div class="product-bottom-details">
+            <div class="product-price"><small>$150.00</small>$99.99</div>
+            <div class="product-links">
+                <button onclick="addToCart()">❤️</button>
+                <button onclick="addToCart()">🛒</button>
+            </div>
+        </div>
+    </div>
+</div>`,
+          css: `body { background: #f1f2f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; font-family: 'Roboto', sans-serif; }
+.product-card { width: 320px; position: relative; box-shadow: 0 2px 7px #dfdfdf; margin: 20px; background: #fafafa; border-radius: 5px; overflow: hidden; }
+.badge { position: absolute; left: 0; top: 20px; text-transform: uppercase; font-size: 13px; font-weight: 700; background: red; color: #fff; padding: 3px 10px; }
+.product-tumb { display: flex; align-items: center; justify-content: center; height: 250px; background: #f0f0f0; }
+.product-tumb img { max-width: 100%; max-height: 100%; object-fit: cover; }
+.product-details { padding: 30px; }
+.product-cat { display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; color: #ccc; margin-bottom: 18px; }
+.product-details h4 a { font-weight: 500; display: block; margin-bottom: 18px; text-transform: uppercase; color: #363636; text-decoration: none; transition: 0.3s; }
+.product-details p { font-size: 14px; line-height: 22px; margin-bottom: 18px; color: #999; }
+.product-bottom-details { overflow: hidden; border-top: 1px solid #eee; padding-top: 20px; display: flex; justify-content: space-between; align-items: center; }
+.product-price { font-size: 18px; color: #fbb72c; font-weight: 600; }
+.product-price small { font-size: 80%; font-weight: 400; text-decoration: line-through; display: inline-block; margin-right: 5px; color: #ccc; }
+.product-links button { background: none; border: none; font-size: 1.2rem; cursor: pointer; transition: 0.3s; }
+.product-links button:hover { transform: scale(1.2); }`,
+          js: `function addToCart() {
+    alert('Đã thêm sản phẩm vào giỏ hàng!');
+}`,
+        },
+        pricing: {
+          html: `<div class="pricing-table">
+    <div class="plan">
+        <h3>Cơ Bản</h3>
+        <div class="price">0₫<span>/tháng</span></div>
+        <ul>
+            <li>✅ 1 Tài khoản</li>
+            <li>✅ 5GB Dung lượng</li>
+            <li>❌ Hỗ trợ 24/7</li>
+        </ul>
+        <button>Chọn Ngay</button>
+    </div>
+    <div class="plan popular">
+        <span class="tag">Phổ biến</span>
+        <h3>Nâng Cao</h3>
+        <div class="price">99k<span>/tháng</span></div>
+        <ul>
+            <li>✅ 5 Tài khoản</li>
+            <li>✅ 50GB Dung lượng</li>
+            <li>✅ Hỗ trợ email</li>
+        </ul>
+        <button>Chọn Ngay</button>
+    </div>
+    <div class="plan">
+        <h3>Vip Pro</h3>
+        <div class="price">299k<span>/tháng</span></div>
+        <ul>
+            <li>✅ Không giới hạn</li>
+            <li>✅ 1TB Dung lượng</li>
+            <li>✅ Hỗ trợ 24/7</li>
+        </ul>
+        <button>Chọn Ngay</button>
+    </div>
+</div>`,
+          css: `body { background: #6c5ce7; font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
+.pricing-table { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }
+.plan { background: white; padding: 30px; border-radius: 15px; width: 250px; text-align: center; box-shadow: 0 10px 20px rgba(0,0,0,0.1); position: relative; transition: 0.3s; }
+.plan:hover { transform: translateY(-10px); }
+.plan.popular { border: 2px solid #fdcb6e; transform: scale(1.05); }
+.plan.popular:hover { transform: scale(1.05) translateY(-10px); }
+.tag { position: absolute; top: -10px; right: 20px; background: #fdcb6e; padding: 5px 15px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; }
+h3 { color: #333; margin-top: 10px; }
+.price { font-size: 2.5rem; font-weight: bold; color: #2d3436; margin: 20px 0; }
+.price span { font-size: 1rem; color: #636e72; font-weight: normal; }
+ul { list-style: none; padding: 0; text-align: left; margin: 20px 0; }
+li { padding: 10px 0; border-bottom: 1px solid #eee; color: #555; }
+button { width: 100%; padding: 12px; border: none; border-radius: 25px; background: #2d3436; color: white; cursor: pointer; transition: 0.3s; }
+button:hover { background: #000; }
+.popular button { background: #fdcb6e; color: #333; font-weight: bold; }
+.popular button:hover { background: #e1b12c; }`,
+          js: `const buttons = document.querySelectorAll('button');
+buttons.forEach(btn => {
+    btn.addEventListener('click', function() {
+        const plan = this.parentElement.querySelector('h3').innerText;
+        alert('Bạn đã chọn gói: ' + plan);
+    });
+});`,
+        },
+        profile: {
+          html: `<div class="card">
+    <div class="cover-photo"></div>
+    <div class="avatar">
+        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="Avatar">
+    </div>
+    <div class="content">
+        <h2>Nguyễn Văn A</h2>
+        <p class="role">Web Developer</p>
+        <p class="desc">Thích code, cà phê và mèo. Đang tìm hiểu về ReactJS.</p>
+        <div class="social-btn">
+            <button onclick="toggleFollow(this)">Follow</button>
+            <button class="outline">Message</button>
+        </div>
+    </div>
+</div>`,
+          css: `body {
+    background-color: #f3f4f6;
+    display: flex; justify-content: center; align-items: center;
+    height: 100vh; margin: 0; font-family: sans-serif;
+}
+.card {
+    background: white; width: 300px;
+    border-radius: 15px; overflow: hidden;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    text-align: center;
+}
+.cover-photo {
+    height: 120px;
+    background: linear-gradient(to right, #00c6ff, #0072ff);
+}
+.avatar {
+    width: 100px; height: 100px;
+    border-radius: 50%; border: 5px solid white;
+    margin: -50px auto 10px; background: #fff;
+    overflow: hidden;
+}
+.avatar img { width: 100%; height: 100%; }
+.content { padding: 0 20px 20px; }
+h2 { margin: 0; color: #333; }
+.role { color: #0072ff; font-weight: bold; margin: 5px 0; }
+.desc { color: #666; font-size: 0.9rem; line-height: 1.5; }
+.social-btn button {
+    padding: 8px 20px; border-radius: 20px;
+    border: none; cursor: pointer; font-weight: bold;
+    background: #0072ff; color: white; margin: 5px;
+    transition: 0.3s;
+}
+.social-btn button.outline {
+    background: transparent; border: 1px solid #0072ff; color: #0072ff;
+}
+.social-btn button:hover { transform: scale(1.05); }`,
+          js: `function toggleFollow(btn) {
+    if (btn.innerText === "Follow") {
+        btn.innerText = "Following";
+        btn.style.background = "#2ecc71";
+    } else {
+        btn.innerText = "Follow";
+        btn.style.background = "#0072ff";
+    }
+}`,
+        },
+        todo: {
+          html: `<div class="todo-app">
+    <h2>📝 Danh Sách Việc Cần Làm</h2>
+    <div class="input-row">
+        <input type="text" id="todoInput" placeholder="Thêm việc mới...">
+        <button onclick="addTodo()">Thêm</button>
+    </div>
+    <ul id="todoList">
+        <li class="checked">Học HTML căn bản</li>
+        <li>Tập thể dục</li>
+    </ul>
+</div>`,
+          css: `body {
+    background: #FFDEE9;
+    background: linear-gradient(0deg, #FFDEE9 0%, #B5FFFC 100%);
+    min-height: 100vh; display: flex;
+    justify-content: center; align-items: center; font-family: sans-serif;
+}
+.todo-app {
+    background: white; width: 100%; max-width: 400px;
+    padding: 30px; border-radius: 10px;
+}
+.input-row { display: flex; gap: 10px; margin-bottom: 20px; }
+input {
+    flex: 1; padding: 10px; border-radius: 30px;
+    border: 1px solid #ccc; outline: none; padding-left: 20px;
+}
+button {
+    padding: 10px 25px; border-radius: 30px; border: none;
+    background: #ff5945; color: white; font-weight: bold; cursor: pointer;
+}
+ul { list-style: none; padding: 0; }
+li {
+    padding: 12px; cursor: pointer; position: relative;
+    user-select: none; transition: 0.2s;
+}
+li:hover { background: #f9f9f9; }
+li::before {
+    content: ''; position: absolute; left: 0; top: 12px;
+    height: 20px; width: 20px; border-radius: 50%;
+    border: 1px solid #ddd;
+}
+li.checked { color: #888; text-decoration: line-through; }
+li.checked::before { background: #ff5945; border-color: #ff5945; }`,
+          js: `const input = document.getElementById("todoInput");
+const list = document.getElementById("todoList");
+
+function addTodo() {
+    if(input.value === '') {
+        alert("Bạn chưa nhập nội dung!");
+    } else {
+        let li = document.createElement("li");
+        li.innerHTML = input.value;
+        list.appendChild(li);
+        input.value = "";
+    }
+}
+
+// Thêm tính năng gạch bỏ khi click
+list.addEventListener('click', function(e) {
+    if(e.target.tagName === "LI") {
+        e.target.classList.toggle("checked");
+    }
+}, false);`,
+        },
+        clock: {
+          html: `<div class="clock-container">
+    <div id="clock">00:00:00</div>
+    <div id="date">Đang tải ngày...</div>
+</div>`,
+          css: `body {
+    background: #000; display: flex;
+    justify-content: center; align-items: center;
+    height: 100vh; margin: 0; font-family: 'Courier New', monospace;
+}
+.clock-container {
+    text-align: center; color: #0f0;
+    text-shadow: 0 0 10px #0f0, 0 0 20px #0f0;
+}
+#clock { font-size: 80px; font-weight: bold; letter-spacing: 5px; }
+#date { font-size: 24px; margin-top: 10px; color: #0a0; }`,
+          js: `function updateClock() {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('vi-VN');
+    const dateString = now.toLocaleDateString('vi-VN', { 
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+    });
+    
+    document.getElementById('clock').innerText = timeString;
+    document.getElementById('date').innerText = dateString;
+}
+
+setInterval(updateClock, 1000);
+updateClock(); // Chạy ngay lập tức`,
+        },
+      };
+
+      function runCode() {
+        // Lấy các phần tử an toàn
+        const htmlEl = document.getElementById("html-code");
+        const cssEl = document.getElementById("css-code");
+        const jsEl = document.getElementById("js-code");
+        const frame = document.getElementById("preview-frame");
+
+        if (!htmlEl || !cssEl || !jsEl || !frame) return;
+
+        const fullCode = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <style>
+                        ${cssEl.value}
+                    </style>
+                </head>
+                <body>
+                    ${htmlEl.value}
+                    <script>
+                        window.onerror = function(msg){ console.error(msg); };
+                        ${jsEl.value}
+                    <\/script>
+                </body>
+                </html>
+            `;
+
+        const frameDoc = frame.contentDocument || frame.contentWindow.document;
+        frameDoc.open();
+        frameDoc.write(fullCode);
+        frameDoc.close();
+      }
+
+      // --- CHỨC NĂNG LƯU TRỮ (LOCALSTORAGE) ---
+
+      function saveCode() {
+        localStorage.setItem(
+          "flab-html",
+          document.getElementById("html-code").value
+        );
+        localStorage.setItem(
+          "flab-css",
+          document.getElementById("css-code").value
+        );
+        localStorage.setItem(
+          "flab-js",
+          document.getElementById("js-code").value
+        );
+      }
+
+      function saveAndStatus() {
+        saveCode();
+        const status = document.getElementById("saveStatus");
+        status.innerText = "Đã lưu...";
+        setTimeout(() => {
+          status.innerText = "";
+        }, 1000);
+      }
+
+      function loadTemplate() {
+        const select = document.getElementById("templateSelect");
+        const selectedKey = select.value;
+        const template = TEMPLATES[selectedKey];
+
+        if (template) {
+          document.getElementById("html-code").value = template.html;
+          document.getElementById("css-code").value = template.css;
+          document.getElementById("js-code").value = template.js;
+          saveCode(); // Lưu ngay khi nạp mẫu mới
+          runCode();
+        }
+      }
+
+      // Tự động load khi mới vào trang
+      window.onload = function () {
+        // 1. Kiểm tra xem có dữ liệu cũ không
+        const savedHtml = localStorage.getItem("flab-html");
+        const savedCss = localStorage.getItem("flab-css");
+        const savedJs = localStorage.getItem("flab-js");
+
+        if (savedHtml !== null || savedCss !== null || savedJs !== null) {
+          // 2. Nếu có, nạp lại dữ liệu cũ
+          if (savedHtml) document.getElementById("html-code").value = savedHtml;
+          if (savedCss) document.getElementById("css-code").value = savedCss;
+          if (savedJs) document.getElementById("js-code").value = savedJs;
+
+          // Hiển thị thông báo nhỏ
+          const status = document.getElementById("saveStatus");
+          status.innerText = "Đã khôi phục phiên làm việc cũ";
+          setTimeout(() => {
+            status.innerText = "";
+          }, 3000);
+
+          runCode();
+        } else {
+          // 3. Nếu chưa có (lần đầu vào), nạp mẫu mặc định
+          document.getElementById("templateSelect").value = "login";
+          loadTemplate();
+        }
+      };
+    </script>
+  </body>
+</html>
