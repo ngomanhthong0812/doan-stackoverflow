@@ -70,6 +70,12 @@ function RootComponent() {
             <Outlet />
             <Toaster
               position="top-center"
+              toastOptions={{
+                style: {
+                  background: "#53B175",
+                  color: "white",
+                },
+              }}
               className="!absolute  -translate-y-1/2"
               offset={{
                 top: "calc(50vh - 48px)",
@@ -86,6 +92,12 @@ function RootComponent() {
               <Outlet />
               <Toaster
                 position="top-center"
+                toastOptions={{
+                  style: {
+                    background: "#53B175",
+                    color: "white",
+                  },
+                }}
                 className="!absolute -translate-y-1/2"
                 offset={{
                   top: "calc(50vh - 48px)",
