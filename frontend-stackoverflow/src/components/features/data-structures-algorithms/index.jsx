@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import UniversalPathfinder from "@/components/dsa/universal-pathfinder";
-import UniversalPathfinder1 from "@/components/dsa/universal-pathfinder1";
+import DFSFlexibleApp from "@/components/dsa/dfs-flexiblea-app";
 import BubbleSortVisualizer from "@/components/dsa/bubble-sort-visualizer";
 import MergeSortVisualizer from "@/components/dsa/merge-sort-visualizer";
 
@@ -21,7 +21,7 @@ export default function DataStructuresAlgorithms() {
     {
       label: "Giải thuật tìm kiếm theo chiều sâu",
       type: "react",
-      component: UniversalPathfinder1,
+      component: DFSFlexibleApp,
     },
     {
       label: "Giải thuật sắp xếp trộn",
