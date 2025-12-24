@@ -45,7 +45,13 @@ passport.use(new GitHubStrategy({
 
         let user = await User.findOne({ email });
         if (!user) {
-            user = await User.create({ username, email, avatar, githubId, password: 'oauth_github' });
+            let newUsername = username;
+            let userCheck = await User.findOne({ username: newUsername });
+            while (userCheck) {
+                newUsername = `${username} ${Math.floor(Math.random() * 10000)}`;
+                userCheck = await User.findOne({ username: newUsername });
+            }
+            user = await User.create({ username: newUsername, email, avatar, githubId, password: 'oauth_github' });
         } else {
             if (!user.githubId) user.githubId = githubId;
             if (!user.avatar) user.avatar = avatar;
