@@ -66,7 +66,7 @@ exports.getAllQuestions = async ({
     { $match: filter },
     {
       $addFields: {
-        upvotesCount: { $size: "$upvotes" },
+        upvotesCount: { $size: { $ifNull: ["$upvotes", []] } },
       },
     },
     {
